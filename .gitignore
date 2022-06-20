@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 experiments/jupyter/imgui.ini
 src/imgui.ini
+
+#MacOS files
+.DS_Store
