@@ -34,6 +34,7 @@ Contents
    License <license>
    Authors <authors>
    Changelog <changelog>
+   Code of Conduct <code_of_conduct>
    Module Reference <api/modules>
 
 

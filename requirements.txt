@@ -1,2 +1,5 @@
 pytest-cov
 pytest
+taichi
+numpy
+matplotlib
