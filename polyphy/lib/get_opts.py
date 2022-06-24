@@ -1,5 +1,5 @@
 import argparse
-from polyohy.lib.defaults import VERSION
+from polyphy.lib.defaults import VERSION
 
 parser = argparse.ArgumentParser(prog="polyphy")
 parser.add_argument('-v', '--version', action='version', version=VERSION)
