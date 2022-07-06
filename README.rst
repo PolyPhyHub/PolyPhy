@@ -8,3 +8,6 @@ Polyphy
 .. image:: https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml/badge.svg?branch=main
    :target: https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml
    :alt: Python Package
+.. image:: http://img.shields.io/badge/license-MIT-blue.svg
+   :target: https://raw.githubusercontent.com/polyphy/polyphy/main/LICENSE
+   :alt: License
