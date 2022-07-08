@@ -7,7 +7,8 @@ ignore =
     F403, # ‘from module import *’ used; unable to detect undefined names
     F841, # local variable name is assigned to but never used
     W503, # line break before binary operator
-    W504  # line break after binary operator
+    W504, # line break after binary operator
+    C901, # main is too complex
 
 max-complexity = 90
 max-line-length = 90
