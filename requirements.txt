@@ -1,8 +1,12 @@
 coverage
+flake8
 matplotlib
 numpy
 pytest
 pytest-cov
+pytest-xdist
 setuptools
 sphinx
 taichi
+toml
+yapf
