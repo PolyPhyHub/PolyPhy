@@ -11,3 +11,5 @@ Polyphy
 .. image:: http://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/polyphy/polyphy/main/LICENSE
    :alt: License
+.. image:: https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG 
+   :target: https://codecov.io/gh/PolyPhyHub/PolyPhy
