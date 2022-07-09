@@ -10,3 +10,4 @@ sphinx
 taichi
 toml
 yapf
+tox
