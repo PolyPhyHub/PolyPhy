@@ -33,6 +33,7 @@ Contents
    Contributions & Help <contributing>
    License <license>
    Authors <authors>
+   Developer's Guide <developer>
    Changelog <changelog>
    Code of Conduct <code_of_conduct>
    Polyphy Api <api/modules>
