@@ -35,7 +35,7 @@ Contents
    Authors <authors>
    Changelog <changelog>
    Code of Conduct <code_of_conduct>
-   Module Reference <api/modules>
+   Polyphy Api <api/modules>
 
 
 Indices and tables
