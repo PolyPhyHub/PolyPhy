@@ -23,8 +23,7 @@ Make sure to install tox in the root of your project.
 
 ::
 
-   tox # will download the dependencies you have specified, build the package, install it in a virtual environment and run the tests using pytest.
-
+    tox # will download the dependencies you have specified, build the package, install it in a virtual environment and run the tests using pytest.
 ::
 
     tox -e docs  # to build your documentation
@@ -32,4 +31,3 @@ Make sure to install tox in the root of your project.
     tox -e publish  # to test your project uploads correctly in test.pypi.org
     tox -e publish -- --repository pypi  # to release your package to PyPI
     tox -av  # to list all the tasks available
-
