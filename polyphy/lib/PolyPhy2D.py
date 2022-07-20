@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import taichi as ti
 
 
-def main():
+def polyphy2D():
+    """Run polyphy 2D simulation"""
     # Simulation-wide constants
     N_AGENTS = 1000000
     DOMAIN_SCALE = 100.0
@@ -181,4 +182,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    polyphy2D()
