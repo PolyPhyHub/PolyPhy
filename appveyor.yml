@@ -25,6 +25,7 @@ install:
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
 build_script:
+  - pwd
   - cd C:\projects\polyphy
   - "python setup.py install"
   - polyphy --version
