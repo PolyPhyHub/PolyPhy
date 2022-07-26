@@ -13,6 +13,8 @@ Polyphy
    :alt: License
 .. image:: https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG 
    :target: https://codecov.io/gh/PolyPhyHub/PolyPhy
+.. image:: https://ci.appveyor.com/api/projects/status/ynv14em7nm0tvjso/branch/main?svg=true
+   :target: https://ci.appveyor.com/project/PatriceJada/polyphy-uyogg/branch/main
 
 Tox
 ===
