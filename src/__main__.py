@@ -5,7 +5,7 @@ from src.lib.get_opts import parser
 
 
 def main():
-    """This function launches the src."""
+    """This function launches the polyphy."""
     if len(sys.argv) == 1:
         # if no command line args are passed, show the help options
         parser.parse_args(['-h'])
