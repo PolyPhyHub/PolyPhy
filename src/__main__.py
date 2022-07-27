@@ -1,11 +1,11 @@
 import logging
 import sys
 
-from polyphy.lib.get_opts import parser
+from src.lib.get_opts import parser
 
 
 def main():
-    """This function launches the polyphy."""
+    """This function launches the src."""
     if len(sys.argv) == 1:
         # if no command line args are passed, show the help options
         parser.parse_args(['-h'])

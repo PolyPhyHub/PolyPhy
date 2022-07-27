@@ -28,10 +28,10 @@ build_script:
   - pwd
   - cd C:\projects\polyphy
   - "python setup.py install"
-  - polyphy --version
+  - src --version
 
 test_script:
   - py.test -v 2>&1
-  - flake8 --ignore=E501,W503,E402,F401,F403,E722,F841,W504 polyphy --max-line-length=90 2>&1
-  - yapf --recursive polyphy/ --style=.style.yapf -d 2>&1
-#  - pylint -rn polyphy/ -f colorized --rcfile=.pylintrc
+  - flake8 --ignore=E501,W503,E402,F401,F403,E722,F841,W504 src --max-line-length=90 2>&1
+  - yapf --recursive src/ --style=.style.yapf -d 2>&1
+#  - pylint -rn src/ -f colorized --rcfile=.pylintrc
