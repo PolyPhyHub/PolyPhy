@@ -28,7 +28,7 @@ build_script:
   - pwd
   - cd C:\projects\polyphy
   - "python setup.py install"
-  - src --version
+  - polyphy --version
 
 test_script:
   - py.test -v 2>&1
