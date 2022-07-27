@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from polyphy.lib.get_opts import parser
+from src.lib.get_opts import parser
 
 
 def main():
