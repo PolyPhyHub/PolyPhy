@@ -1,4 +1,5 @@
 import argparse
+
 from polyphy.lib.defaults import VERSION
 
 parser = argparse.ArgumentParser(prog="polyphy")

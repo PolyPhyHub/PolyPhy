@@ -39,7 +39,7 @@ jobs:
   
         flake8 ./polyphy --ignore=E501,W503,E402,F401,F403,E722,F841,W504  --max-line-length=90 2>&1
         yapf -d --recursive ./polyphy/ --style=.style.yapf 2>&1
-        isort ./polyyphy -c -v
+        isort ./polyphy -c -v
     - name: Test with pytest
       run: |
         pytest -v --cov=./polyphy --cov-report=xml
