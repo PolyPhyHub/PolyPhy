@@ -1,7 +1,7 @@
-import numpy as np
-from numpy.random import default_rng
 import matplotlib.pyplot as plt
+import numpy as np
 import taichi as ti
+from numpy.random import default_rng
 
 
 def main():
