@@ -27,7 +27,7 @@ install:
 build_script:
   - pwd
   - cd C:\projects\polyphy
-  - "python setup.py install"
+  - "%PYTHON%\\python.exe -m pip install . -U"
   - polyphy --version
 
 test_script:
