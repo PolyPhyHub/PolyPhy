@@ -33,3 +33,4 @@ Make sure to install tox in the root of your project.
     tox -e publish  # to test your project uploads correctly in test.pypi.org
     tox -e publish -- --repository pypi  # to release your package to PyPI
     tox -av  # to list all the tasks available
+
