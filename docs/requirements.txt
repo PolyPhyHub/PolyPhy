@@ -1,5 +1,25 @@
-# Requirements file for ReadTheDocs, check .readthedocs.yml.
-# To build the module reference correctly, make sure every external package
-# under `install_requires` in `setup.cfg` is also listed here!
-sphinx>=3.2.1
 # sphinx_rtd_theme
+Pillow
+configupdater
+coverage
+flake8
+furo
+isort
+matplotlib
+numpy<=1.22.0
+packaging
+platformdirs
+pytest
+pytest-cov
+pytest-xdist
+setuptools
+setuptools_scm
+sphinx
+sphinx-copybutton
+sphinx>=3.2.1
+sphinxemoji
+taichi
+toml
+tomlkit
+tox
+yapf
