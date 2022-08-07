@@ -5,7 +5,7 @@ from numpy.random import default_rng
 
 
 def run_2D():
-    # Simulation-wide constants
+    """Simulation-wide constants"""
     N_AGENTS = 1000000
     DOMAIN_SCALE = 100.0
     TRACE_RESOLUTION = (1024, 1024)
