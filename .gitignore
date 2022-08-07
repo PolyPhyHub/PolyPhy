@@ -137,3 +137,4 @@ src/imgui.ini
 # IDE 
 .idea/
 *.png
+*.npy
