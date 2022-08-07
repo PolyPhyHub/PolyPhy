@@ -4,8 +4,8 @@ import taichi as ti
 from numpy.random import default_rng
 
 
-def main():
-    # Simulation-wide constants
+def run_2D():
+    """Simulation-wide constants"""
     N_AGENTS = 1000000
     DOMAIN_SCALE = 100.0
     TRACE_RESOLUTION = (1024, 1024)
@@ -181,4 +181,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_2D()
