@@ -2,12 +2,14 @@ coverage
 flake8
 isort
 matplotlib
+myst-parser
 numpy
 pytest
 pytest-cov
 pytest-xdist
 setuptools
 sphinx
+sphinx_markdown_builder
 taichi
 toml
 yapf

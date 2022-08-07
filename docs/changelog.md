@@ -1,0 +1,3 @@
+# Changes:
+
+.. include:: ../CHANGELOG.md

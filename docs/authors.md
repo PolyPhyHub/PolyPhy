@@ -1,0 +1,4 @@
+# authors:
+
+.. include:: ../AUTHORS.md
+

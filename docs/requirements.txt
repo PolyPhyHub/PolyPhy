@@ -6,6 +6,7 @@ flake8
 furo
 isort
 matplotlib
+myst-parser
 numpy<=1.22.0
 packaging
 platformdirs
@@ -18,6 +19,7 @@ sphinx
 sphinx-copybutton
 sphinx>=3.2.1
 sphinxemoji
+sphinx_markdown_builder
 taichi
 toml
 tomlkit
