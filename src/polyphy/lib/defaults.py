@@ -1,4 +1,4 @@
-from src.polyphy._version import __version__
+from .._version import __version__
 
 VERSION = __version__
 COPYRIGHT = "Copyright (C) 2022"
