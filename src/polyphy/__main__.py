@@ -14,9 +14,9 @@ def main():
 
         # parse them
         args = parser.parse_args()
-        if args.command == "run2D":
+        if args.command == "run2d":
             run_2D()
-        if args.command == "run3D":
+        elif args.command == "run3d":
             # run_3D()
             print("polyphy3D is under development")
 
