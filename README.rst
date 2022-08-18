@@ -16,6 +16,52 @@ Polyphy
 .. image:: https://ci.appveyor.com/api/projects/status/ynv14em7nm0tvjso/branch/main?svg=true
    :target: https://ci.appveyor.com/project/PatriceJada/polyphy-uyogg/branch/main
 
+How to use polyphy
+==================
+
+Installation
+------------
+
+Install from the source.
+
+1. Clone the repo: https://github.com/PolyPhyHub/PolyPhy.git
+2. Go to the directory and run **pip install . -U**
+
+Install from pypi.
+
+1. **pip install polyphy**
+
+Running polyphy
+---------------
+
+Using command line
+::
+
+    ✗ polyphy
+    [Taichi] version 1.0.3, llvm 10.0.0, commit fae94a21, osx, python 3.8.9
+    usage: polyphy [-h] [-v] [-q] {run2d,run3d} ...
+
+    positional arguments:
+      {run2d,run3d}  sub command help
+        run2d        run 2D PolyPhy
+        run3d        run 2D PolyPhy
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      -v, --version  show program's version number and exit
+      -q, --quiet    suppress output
+
+::
+
+Run polyphy2d
+
+::
+
+   ✗ polyphy run2d
+::
+
+
+
 Tox
 ===
 
