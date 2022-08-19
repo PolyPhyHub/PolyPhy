@@ -53,11 +53,20 @@ Using command line
 
 ::
 
-Run polyphy2d
+
+Run polyphy2d using python interface
 
 ::
 
-   ✗ polyphy run2d
+    ✗ python
+    Python 3.8.9 (default, Apr 13 2022, 08:48:06)
+    [Clang 13.1.6 (clang-1316.0.21.2.5)] on darwin
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> import polyphy
+    [Taichi] version 1.0.3, llvm 10.0.0, commit fae94a21, osx, python 3.8.9
+    >>> polyphy.lib.run_2D()
+    [Taichi] Starting on arch=metal
+
 ::
 
 
