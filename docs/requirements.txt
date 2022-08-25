@@ -7,7 +7,7 @@ flake8
 furo
 isort
 matplotlib==3.5.3
-numpy==1.22.0
+numpy<=1.22.0
 packaging
 platformdirs
 pytest
