@@ -11,7 +11,7 @@ Polyphy
 .. image:: http://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/polyphy/polyphy/main/LICENSE
    :alt: License
-.. image:: https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG 
+.. image:: https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG
    :target: https://codecov.io/gh/PolyPhyHub/PolyPhy
 .. image:: https://ci.appveyor.com/api/projects/status/ynv14em7nm0tvjso/branch/main?svg=true
    :target: https://ci.appveyor.com/project/PatriceJada/polyphy-uyogg/branch/main
@@ -35,7 +35,8 @@ Running polyphy
 ---------------
 
 Using command line
-::
+
+.. code-block:: pycon
 
     ✗ polyphy
     [Taichi] version 1.0.3, llvm 10.0.0, commit fae94a21, osx, python 3.8.9
@@ -44,19 +45,16 @@ Using command line
     positional arguments:
       {run2d,run3d}  sub command help
         run2d        run 2D PolyPhy
-        run3d        run 2D PolyPhy
+        run3d        run 3D PolyPhy
 
     optional arguments:
       -h, --help     show this help message and exit
       -v, --version  show program's version number and exit
       -q, --quiet    suppress output
 
-::
-
-
 Run polyphy2d using python interface
 
-::
+.. code-block:: pycon
 
     ✗ python
     Python 3.8.9 (default, Apr 13 2022, 08:48:06)
@@ -67,25 +65,18 @@ Run polyphy2d using python interface
     >>> polyphy.lib.run_2D()
     [Taichi] Starting on arch=metal
 
-::
-
-
-
 Tox
 ===
 
 Tox is a virtual environment management and test tool that allows you to define and run custom tasks that call executables from Python packages.
 
-Make sure to install tox in the root of your project. 
+Make sure to install tox in the root of your project.
 
-::
+.. code-block:: pycon
 
     tox # will download the dependencies you have specified, build the package, install it in a virtual environment and run the tests using pytest.
-::
-
     tox -e docs  # to build your documentation
     tox -e build  # to build your package distribution
     tox -e publish  # to test your project uploads correctly in test.pypi.org
     tox -e publish -- --repository pypi  # to release your package to PyPI
     tox -av  # to list all the tasks available
-
