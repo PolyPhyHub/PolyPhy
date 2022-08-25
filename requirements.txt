@@ -3,7 +3,7 @@ coverage
 flake8
 isort
 matplotlib==3.5.3
-numpy==1.22.0
+numpy<=1.22.0
 pytest-cov
 pytest-xdist
 pytest==7.1.2
