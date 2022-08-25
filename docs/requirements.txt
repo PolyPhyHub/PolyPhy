@@ -1,20 +1,21 @@
 # sphinx_rtd_theme
 Pillow
+Sphinx==4.5.0
 configupdater
 coverage
 flake8
 furo
 isort
-matplotlib
-numpy<=1.22.0
+matplotlib==3.5.3
+numpy==1.22.0
 packaging
 platformdirs
 pytest
 pytest-cov
 pytest-xdist
-setuptools
+pytest==7.1.2
+setuptools==63.2.0
 setuptools_scm
-sphinx
 sphinx-copybutton
 sphinx>=3.2.1
 sphinxemoji
