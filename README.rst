@@ -80,3 +80,23 @@ Make sure to install tox in the root of your project.
     tox -e publish  # to test your project uploads correctly in test.pypi.org
     tox -e publish -- --repository pypi  # to release your package to PyPI
     tox -av  # to list all the tasks available
+
+Services
+========
+
+Codecov
+--------
+
+A service that generates a visual report of how much code has been tested. All configuration settings can be found in the codecov.yml file.
+
+GitHub Actions
+--------------
+
+GitHub Actions is being used to test on MacOs as well as Linux. It allows for the automation of the building, testing, and deployment pipline.
+
+Appveyor
+--------
+
+A service that can be used to test Windows. All configuration settings can be found in the appveyor.yml file.
+
+
