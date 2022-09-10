@@ -1,7 +1,7 @@
 import sys
 
 from .lib.get_opts import parser
-from .lib.PolyPhy2D import run_2D
+from .lib.runner import run2d, run3d
 
 
 def main():
@@ -15,10 +15,9 @@ def main():
         # parse them
         args = parser.parse_args()
         if args.command == "run2d":
-            run_2D()
+            run2d(args.command)
         elif args.command == "run3d":
-            # run_3D()
-            print("polyphy3D is under development")
+            run3d(args.command)
 
 
 if __name__ == "__main__":
