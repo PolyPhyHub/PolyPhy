@@ -1,7 +1,7 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import taichi as ti
 from numpy.random import default_rng
+
 from ..lib.simulator import Poly
 
 
@@ -73,7 +73,8 @@ class polyphys(Poly):
 
         @ti.func
         def world_to_grid_2D(pos_world, size_world, size_grid) -> VEC2i:
-            return ti.cast((pos_world / size_world) * ti.cast(size_grid, FLOAT_GPU), INT_GPU)
+            return ti.cast((pos_world / size_world) * ti.cast(size_grid, FLOAT_GPU),
+                           INT_GPU)
 
         @ti.func
         def angle_to_dir_2D(angle) -> VEC2f:
@@ -92,12 +93,12 @@ class polyphys(Poly):
                 dir_mut = angle_to_dir_2D(angle_mut)
 
                 # TODO deposit field ping pong
-                deposit_fwd = deposit_field[world_to_grid_2D(pos + sense_distance * dir_fwd,
-                                                             VEC2f(DOMAIN_SIZE),
-                                                             VEC2i(DEPOSIT_RESOLUTION))][0]
-                deposit_mut = deposit_field[world_to_grid_2D(pos + sense_distance * dir_mut,
-                                                             VEC2f(DOMAIN_SIZE),
-                                                             VEC2i(DEPOSIT_RESOLUTION))][0]
+                deposit_fwd = deposit_field[world_to_grid_2D(
+                    pos + sense_distance * dir_fwd, VEC2f(DOMAIN_SIZE),
+                    VEC2i(DEPOSIT_RESOLUTION))][0]
+                deposit_mut = deposit_field[world_to_grid_2D(
+                    pos + sense_distance * dir_mut, VEC2f(DOMAIN_SIZE),
+                    VEC2i(DEPOSIT_RESOLUTION))][0]
 
                 # TODO domain wrapping
                 angle_new = (angle) if (deposit_fwd > deposit_mut) else (
@@ -134,8 +135,9 @@ class polyphys(Poly):
         @ti.kernel
         def render_visualization():
             for x, y in ti.ndrange(vis_field.shape[0], vis_field.shape[1]):
-                deposit_val = deposit_field[x * DEPOSIT_RESOLUTION[0] // VIS_RESOLUTION[0],
-                                            y * DEPOSIT_RESOLUTION[1] // VIS_RESOLUTION[1]][0]
+                deposit_val = deposit_field[x * DEPOSIT_RESOLUTION[0] //
+                                            VIS_RESOLUTION[0], y *
+                                            DEPOSIT_RESOLUTION[1] // VIS_RESOLUTION[1]][0]
                 trace_val = trace_field[x * TRACE_RESOLUTION[0] // VIS_RESOLUTION[0],
                                         y * TRACE_RESOLUTION[1] // VIS_RESOLUTION[1]]
                 vis_field[x, y] = VEC3f(trace_val, trace_val, deposit_val if
@@ -162,12 +164,13 @@ class polyphys(Poly):
 
         while window.running:
             window.GUI.begin('Params', 0.0, 0.0, 0.6, 0.25)
-            sense_distance = window.GUI.slider_float('Sense dist', sense_distance, 0.1, 10.0)
+            sense_distance = window.GUI.slider_float('Sense dist', sense_distance, 0.1,
+                                                     10.0)
             sense_angle = window.GUI.slider_float('Sense angle', sense_angle, 0.1, 10.0)
             step_size = window.GUI.slider_float('Step size', step_size, 0.01, 0.5)
             attenuation = window.GUI.slider_float('Attenuation', attenuation, 0.9, 0.999)
-            weight_multiplier = window.GUI.slider_float('Weight mul', weight_multiplier, 0.01,
-                                                        1.0)
+            weight_multiplier = window.GUI.slider_float('Weight mul', weight_multiplier,
+                                                        0.01, 1.0)
             window.GUI.end()
 
             propagation_step(sense_distance, sense_angle, steering_rate, step_size,
@@ -184,9 +187,3 @@ class polyphys(Poly):
         trace = trace_field.to_numpy()
 
         # TODO store resulting fields
-
-
-if __name__ == "__main__":
-
-    obj = polyphys()
-    obj.run()
