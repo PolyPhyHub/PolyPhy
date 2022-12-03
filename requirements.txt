@@ -9,7 +9,7 @@ pytest-xdist
 pytest==7.1.2
 setuptools==63.2.0
 sphinx
-taichi
+taichi==1.0.3
 toml
 tox
 yapf
