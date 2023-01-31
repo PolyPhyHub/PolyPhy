@@ -20,6 +20,11 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 - Official website: [polyphy.io](https://polyphy.io)
 - Underlying research: [overview](https://elek.pub/projects/Rhizome-Cosmology/) and [publications](https://elek.pub/research.html)
 
+## System Requirements
+- Decent GPU, currently tested NVIDIA GPUs, other brands subject to support by Taichi
+- Recent Windows, Linux or Mac OS
+- Python 3.x, Anaconda recommended
+
 ## How to use PolyPhy
 
 ### Installation
