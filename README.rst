@@ -15,6 +15,10 @@ Polyphy
    :target: https://codecov.io/gh/PolyPhyHub/PolyPhy
 .. image:: https://ci.appveyor.com/api/projects/status/ynv14em7nm0tvjso/branch/main?svg=true
    :target: https://ci.appveyor.com/project/PatriceJada/polyphy-uyogg/branch/main
+.. image:: https://api.reuse.software/badge/git.fsfe.org/reuse/api
+   :target: https://api.reuse.software/info/git.fsfe.org/reuse/api
+   :alt: REUSE status
+   
 
 How to use polyphy
 ==================
