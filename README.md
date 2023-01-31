@@ -32,7 +32,7 @@ The repository is located on the following GitHub URL:<br/>
 Below is a recording of the [PolyPhy Workshop](https://elek.pub/workshop_cross2022.html) given as part of the [OSPO Symposium 2022](https://ospo.ucsc.edu/event/20220927/).<br/>
 This 93-minute workshop covers *PolyPhy*'s research background, all 4 above usecases, and technical discussion.
 
-[![PolyPhy Workshop](http://i3.ytimg.com/vi/3-hm7iTqz0U/hqdefault.jpg)]([http://www.youtube.com/watch?v=ceNGfSOOzDY](https://www.youtube.com/watch?v=3-hm7iTqz0U) "PolyPhy Workshop")
+[![](http://i3.ytimg.com/vi/3-hm7iTqz0U/hqdefault.jpg)](https://www.youtube.com/watch?v=3-hm7iTqz0U "PolyPhy Workshop")
 
 ## Functionality
 The 3 main use cases detailed in the above workshop are currently implemented in dedicated Jupyter notebooks located in **./experiments/Jupyter**. They are as follows, in regard to the data pipeline they implement: discrete 2D, continuous 2D data and discrete 3D data.
