@@ -2,22 +2,22 @@
 Polyphy
 =======
 
-.. image:: https://readthedocs.org/projects/polyphy/badge/?version=latest
-   :target: https://polyphy.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
-.. image:: https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml/badge.svg?branch=main
-   :target: https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml
-   :alt: Python Package
 .. image:: http://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/polyphy/polyphy/main/LICENSE
    :alt: License
-.. image:: https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG
-   :target: https://codecov.io/gh/PolyPhyHub/PolyPhy
+.. image:: https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml/badge.svg?branch=main
+   :target: https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml
+   :alt: Python Package
 .. image:: https://ci.appveyor.com/api/projects/status/ynv14em7nm0tvjso/branch/main?svg=true
    :target: https://ci.appveyor.com/project/PatriceJada/polyphy-uyogg/branch/main
+.. image:: https://readthedocs.org/projects/polyphy/badge/?version=latest
+   :target: https://polyphy.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 .. image:: https://api.reuse.software/badge/git.fsfe.org/reuse/api
    :target: https://api.reuse.software/info/git.fsfe.org/reuse/api
    :alt: REUSE status
+.. image:: https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG
+   :target: https://codecov.io/gh/PolyPhyHub/PolyPhy
    
 
 How to use polyphy
@@ -69,15 +69,16 @@ Run polyphy2d using python interface
     >>> polyphy.lib.run_2D()
     [Taichi] Starting on arch=metal
 
+
+Services
+========
+
 Tox
-===
+---
 
-Tox is a virtual environment management and test tool that allows you to define and run custom tasks that call executables from Python packages.
-
-Make sure to install tox in the root of your project.
+Tox is a virtual environment management and test tool that allows you to define and run custom tasks that call executables from Python packages. Make sure to install tox in the root of your project if you intend to work on the development.
 
 .. code-block:: pycon
-
     tox # will download the dependencies you have specified, build the package, install it in a virtual environment and run the tests using pytest.
     tox -e docs  # to build your documentation
     tox -e build  # to build your package distribution
@@ -85,22 +86,16 @@ Make sure to install tox in the root of your project.
     tox -e publish -- --repository pypi  # to release your package to PyPI
     tox -av  # to list all the tasks available
 
-Services
-========
-
 Codecov
---------
-
+-------
 A service that generates a visual report of how much code has been tested. All configuration settings can be found in the codecov.yml file.
 
 GitHub Actions
 --------------
-
 GitHub Actions is being used to test on MacOs as well as Linux. It allows for the automation of the building, testing, and deployment pipline.
 
 Appveyor
 --------
-
 A service that can be used to test Windows. All configuration settings can be found in the appveyor.yml file.
 
 
