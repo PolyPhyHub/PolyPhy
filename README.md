@@ -1,21 +1,16 @@
-# Polyphy
+# PolyPhy
 
 [![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/polyphy/polyphy/main/LICENSE)
-
 [![Python
 Package](https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml/badge.svg?branch=main)](https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml)
-
 [![image](https://ci.appveyor.com/api/projects/status/ynv14em7nm0tvjso/branch/main?svg=true)](https://ci.appveyor.com/project/PatriceJada/polyphy-uyogg/branch/main)
-
 [![Documentation
 Status](https://readthedocs.org/projects/polyphy/badge/?version=latest)](https://polyphy.readthedocs.io/en/latest/?badge=latest)
-
 [![REUSE
 status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.reuse.software/info/git.fsfe.org/reuse/api)
-
 [![image](https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG)](https://codecov.io/gh/PolyPhyHub/PolyPhy)
 
-## How to use polyphy
+## How to use PolyPhy
 
 ### Installation
 
@@ -28,7 +23,7 @@ Install from pypi.
 
 1.  **pip install polyphy**
 
-### Running polyphy
+### Running PolyPhy
 
 Using command line
 
@@ -63,34 +58,27 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 ## Services
 
-### Tox
+#### Tox
 
-Tox is a virtual environment management and test tool that allows you to
-define and run custom tasks that call executables from Python packages.
-Make sure to install tox in the root of your project if you intend to
-work on the development.
+Tox is a virtual environment management and test tool that allows you to define and run custom tasks that call executables from Python packages. Tox will download the dependencies you have specified, build the package, install it in a virtual environment and run the tests using pytest. Make sure to install tox in the root of your project if you intend to work on the development.
 
 ``` pycon
-tox # will download the dependencies you have specified, build the package, install it in a virtual environment and run the tests using pytest.
+tox # download dependencies, build and install package, run tests
 tox -e docs  # to build your documentation
 tox -e build  # to build your package distribution
 tox -e publish  # to test your project uploads correctly in test.pypi.org
-tox -e publish -- --repository pypi  # to release your package to PyPI
+tox -e publish --repository pypi  # to release your package to PyPI
 tox -av  # to list all the tasks available
 ```
 
-### Codecov
+#### GitHub Actions
 
-A service that generates a visual report of how much code has been
-tested. All configuration settings can be found in the codecov.yml file.
+GitHub Actions is being used to test on MacOs as well as Linux. It allows for the automation of the building, testing, and deployment pipline.
 
-### GitHub Actions
+#### Codecov
 
-GitHub Actions is being used to test on MacOs as well as Linux. It
-allows for the automation of the building, testing, and deployment
-pipline.
+A service that generates a visual report of how much code has been tested. All configuration settings can be found in the codecov.yml file.
 
-### Appveyor
+#### Appveyor
 
-A service that can be used to test Windows. All configuration settings
-can be found in the appveyor.yml file.
+A service that can be used to test Windows. All configuration settings can be found in the appveyor.yml file.
