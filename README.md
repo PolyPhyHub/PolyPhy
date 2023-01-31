@@ -27,21 +27,33 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 
 ## How to use PolyPhy
 
-### Installation
+Below is a recording of the [PolyPhy Workshop](https://elek.pub/workshop_cross2022.html) given as part of the [OSPO Symposium 2022](https://ospo.ucsc.edu/event/20220927/).<br/>
+This 93-minute workshop covers *PolyPhy*'s research background, all 4 above usecases, and technical discussion.
 
-Install from the source.
+[![PolyPhy Workshop](http://i3.ytimg.com/vi/3-hm7iTqz0U/hqdefault.jpg)]([http://www.youtube.com/watch?v=ceNGfSOOzDY](https://www.youtube.com/watch?v=3-hm7iTqz0U) "PolyPhy Workshop")
 
-1.  Clone the repo: <https://github.com/PolyPhyHub/PolyPhy.git>
-2.  Go to the directory and run **pip install . -U**
+### Repository
 
-Install from pypi.
+The repository is located on the following GitHub URL:<br/>
+<https://github.com/PolyPhyHub/PolyPhy.git>
 
-1.  **pip install polyphy**
+### Install locally from code
+
+Navigate to the repository root and run:<br/>
+```
+pip install . -U
+```
+
+### Install from PyPI
+
+From the command line run:<br/>
+```
+pip install polyphy
+```
 
 ### Running PolyPhy
 
-Using command line
-
+Using command line<br/>
 ``` pycon
 ✗ polyphy
 [Taichi] version 1.0.3, llvm 10.0.0, commit fae94a21, osx, python 3.8.9
@@ -58,8 +70,7 @@ optional arguments:
   -q, --quiet    suppress output
 ```
 
-Run polyphy2d using python interface
-
+Run polyphy2d using python interface<br/>
 ``` pycon
 ✗ python
 Python 3.8.9 (default, Apr 13 2022, 08:48:06)
