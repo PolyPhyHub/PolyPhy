@@ -13,7 +13,7 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 # PolyPhy
 *PolyPhy* is an unconventional toolkit for reconstructing continuous networks out of sparse 2D or 3D data. Such data can be defined as collections of discrete points, or a continuous sparse scalar field. *PolyPhy* produces a scalar density field that defines the recovered network structure. With the help of GPU-accelerated simulation and visualization, *PolyPhy* provides domain experts an interactive way to reconstruct discrete geometric data with an underlying network structure.
 
-## Related resources
+## Related Resources
 - *PolyPhy* is a successor of [Polyphorm](https://github.com/CreativeCodingLab/Polyphorm)
 - Main GitHub page: [PolyPhy Hub](https://github.com/PolyPhyHub)
 - Official website: [polyphy.io](https://polyphy.io)
@@ -28,7 +28,7 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 The repository is located on the following GitHub URL:<br/>
 <https://github.com/PolyPhyHub/PolyPhy.git>
 
-## How to use PolyPhy
+## How to Use PolyPhy
 Below is a recording of the [PolyPhy Workshop](https://elek.pub/workshop_cross2022.html) given as part of the [OSPO Symposium 2022](https://ospo.ucsc.edu/event/20220927/).<br/>
 This 93-minute workshop covers *PolyPhy*'s research background, all 4 above usecases, and technical discussion.
 
@@ -37,7 +37,7 @@ This 93-minute workshop covers *PolyPhy*'s research background, all 4 above usec
 ## Functionality
 The 3 main use cases detailed in the above workshop are currently implemented in dedicated Jupyter notebooks located in **./experiments/Jupyter**. They are as follows, in regard to the data pipeline they implement: discrete 2D, continuous 2D data and discrete 3D data.
 
-## PolyPhy build
+## PolyPhy Build
 
 ### Install locally from code
 Navigate to the repository root and run:<br/>
