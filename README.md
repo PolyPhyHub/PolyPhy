@@ -11,7 +11,7 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 <!-- [![image](https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG)](https://codecov.io/gh/PolyPhyHub/PolyPhy) -->
 
 # PolyPhy
-*PolyPhy* is an unconventional toolkit for reconstructing continuous networks out of sparse 2D or 3D data. Such data can be defined as collections of discrete points, or a continuous sparse scalar field. *PolyPhy* produces a scalar density field that defines the recovered network structure. With the help of GPU-accelerated simulation and visualization, *PolyPhy* provides domain experts an interactive way to reconstruct discrete geometric data with an underlying network structure.
+*PolyPhy* is an unconventional toolkit for reconstructing continuous networks out of sparse 2D or 3D data. Such data can be defined as collections of discrete points, or a continuous sparse scalar field. *PolyPhy* produces a scalar density field that defines the recovered network structure. With the help of GPU-accelerated simulation and visualization, *PolyPhy* provides domain experts an interactive way to reconstruct discrete geometric data with an underlying network structure. The reconstruction is driven by the *Monte Carlo Physarum Machine* algorithm, a metaheuristic inspired by the morphology and dynamics of Physarum polycephalum aka 'slime mold'.
 
 ## Related Resources
 - *PolyPhy* is a successor of [Polyphorm](https://github.com/CreativeCodingLab/Polyphorm)
@@ -25,17 +25,21 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 - Python 3.x, Anaconda recommended
 
 ## Repository
-The repository is located on the following GitHub URL:<br/>
+The repository is located at the following GitHub URL:<br/>
 <https://github.com/PolyPhyHub/PolyPhy.git>
+
+## Functionality
+The use-cases currently supported by *PolyPhy* are divided according to the data workflow they are built around. Each use-case has a corresponding Jupyter notebook that implements it located in **./experiments/Jupyter**. This section reviews them case by case, and the following section provides an extensive tutorial recorded at the recent OSPO Symposium 2022.
+
+- **2D self-patterning** is the most basic use-case implemented within the **./experiments/Jupyter/PolyPhy_2D_discrete_data** notebook. The ability of MCPM to generate a diversity of patterns with network characteristics is achieved by disabling the data marker deposition, leaving only the MCPM agents to generate the marker responsible for maintaining structure.<p>
+![2D_self-patterning](https://user-images.githubusercontent.com/26778894/215976261-d9509124-e3bf-4b82-9cc8-b96a40ab3db2.jpg)
+</p>
 
 ## How to Use PolyPhy
 Below is a recording of the [PolyPhy Workshop](https://elek.pub/workshop_cross2022.html) given as part of the [OSPO Symposium 2022](https://ospo.ucsc.edu/event/20220927/).<br/>
-This 93-minute workshop covers *PolyPhy*'s research background, all 4 above usecases, and technical discussion.
+This 93-minute workshop covers *PolyPhy*'s research background, all of the 5 above usecases, and extended technical discussion.
 
 [![](http://i3.ytimg.com/vi/3-hm7iTqz0U/hqdefault.jpg)](https://www.youtube.com/watch?v=3-hm7iTqz0U "PolyPhy Workshop")
-
-## Functionality
-The 3 main use cases detailed in the above workshop are currently implemented in dedicated Jupyter notebooks located in **./experiments/Jupyter**. They are as follows, in regard to the data pipeline they implement: discrete 2D, continuous 2D data and discrete 3D data.
 
 ## PolyPhy Build
 
