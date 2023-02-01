@@ -20,7 +20,8 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 - Underlying research: [overview](https://elek.pub/projects/Rhizome-Cosmology/) and [publications](https://elek.pub/research.html)
 
 ## System Requirements
-- Decent GPU, currently tested NVIDIA GPUs, other brands subject to support by Taichi
+- Decent GPU, currently tested NVIDIA GPUs, other brands subject to support by the [Taichi API](https://github.com/taichi-dev/taichi)
+  - CPU fallback available for debugging purposes
 - Recent Windows, Linux or Mac OS
 - Python 3.x, Anaconda recommended
 
@@ -32,7 +33,23 @@ The repository is located at the following GitHub URL:<br/>
 The use-cases currently supported by *PolyPhy* are divided according to the data workflow they are built around. Each use-case has a corresponding Jupyter notebook that implements it located in **./experiments/Jupyter**. This section reviews them case by case, and the following section provides an extensive tutorial recorded at the recent OSPO Symposium 2022.
 
 - **2D self-patterning** is the most basic use-case implemented within the **./experiments/Jupyter/PolyPhy_2D_discrete_data** notebook. The ability of MCPM to generate a diversity of patterns with network characteristics is achieved by disabling the data marker deposition, leaving only the MCPM agents to generate the marker responsible for maintaining structure.<p>
-![2D_self-patterning](https://user-images.githubusercontent.com/26778894/215976261-d9509124-e3bf-4b82-9cc8-b96a40ab3db2.jpg)
+  ![2D_self-patterning](https://user-images.githubusercontent.com/26778894/215976261-d9509124-e3bf-4b82-9cc8-b96a40ab3db2.jpg)
+</p>
+
+- **2D procedural pipeline** provide an easy environment to experiment with the behavior of *PolyPhy* in the presence of discrete data with different spatial frequencies. Editing (adding new data points) is also supported. This pipeline is implemented in the **./experiments/Jupyter/PolyPhy_2D_discrete_data** notebook.<p>
+  ![2D_discrete_procedural](https://user-images.githubusercontent.com/26778894/215980005-f927d227-0090-46dd-8ec6-fde9b800dfa0.jpg)
+</p>
+
+- **2D discrete pipeline** implements the canonical way of working with custom data defined by a CSV file. The example below demonstrates fitting to a 2D projection of the SDSS galaxy dataset. This pipeline is implemented in the **./experiments/Jupyter/PolyPhy_2D_discrete_data** notebook.<p>
+  ![2D_discrete_explicit](https://user-images.githubusercontent.com/26778894/215980486-f77da2ec-8780-4a23-bacc-a03c164ebe2a.jpg)
+</p>
+
+- **2D continuous pipeline** demonstrates the workflow with a continuous user-provided dataset. Instead of a discrete set of points as in the previous use-cases, the data is defined by a scalar field, which in 2D amounts to a grayscale image. The example below approximates the US road network using only a sparse population density map as the input. This pipeline is implemented in the **./experiments/Jupyter/PolyPhy_2D_continuous_data** notebook.<p>
+  ![2D_continuous](https://user-images.githubusercontent.com/26778894/215981222-6fa4b334-45d2-498f-8c5a-c150137574ac.jpg)
+</p>
+
+- **3D discrete pipeline** represents an equivalent functionality to the original *Polyphorm* implementation. The dataset consists of SDSS galaxies defined as a weighted collection of 3D points. THe visualization is based on volumetric ray marching simultaneously fetching the deposit and the trace fields. This pipeline is implemented in the **./experiments/Jupyter/PolyPhy_3D_discrete_data** notebook.<p>
+  ![3D_discrete_explicit](https://user-images.githubusercontent.com/26778894/215981925-96ed3322-0068-497d-a2e7-4543c7ef8e41.jpg)
 </p>
 
 ## How to Use PolyPhy
