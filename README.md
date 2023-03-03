@@ -73,7 +73,7 @@ pip install polyphy
 ```
 
 ### Running PolyPhy
-Please note that the core PolyPhy code is currently undergoing refactoring and the latest functionality presented in the Jupyter notebooks described above is not fully ported yet.
+**Please note that the latest PolyPhy code is currently undergoing refactoring and the latest functionality presented in the Jupyter notebooks described above is not fully ported yet.**
 
 Running PolyPhy from the command line:<br/>
 ``` pycon
