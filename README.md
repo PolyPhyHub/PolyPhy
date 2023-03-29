@@ -60,6 +60,21 @@ This 93-minute workshop covers *PolyPhy*'s research background, all of the 5 abo
 
 ## PolyPhy Build
 
+### Run using docker
+To build the docker image:<br/>
+```
+docker build . -t polyphy
+```
+To run the docker container:<br/>
+```
+docker run -it polyphy
+```
+Optional:<br/>
+If you want to work with jupyter notebook and develop:<br/>
+```
+docker run -it -p 8000:8000 -p 8888:8888 polyphy
+```
+
 ### Install locally from code
 Navigate to the repository root and run:<br/>
 ```
