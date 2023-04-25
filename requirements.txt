@@ -8,6 +8,7 @@ numpy<=1.22.0
 pytest-cov
 pytest-xdist
 pytest==7.1.2
+scipy
 setuptools==63.2.0
 sphinx
 taichi==1.0.3
