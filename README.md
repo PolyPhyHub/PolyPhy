@@ -1,6 +1,8 @@
 ![header_narrow](https://user-images.githubusercontent.com/26778894/215681761-68adbc1c-4cfa-445d-a745-79a6c09118b2.jpg)
 
-[![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/polyphy/polyphy/main/LICENSE)
+[![PolyPhyHub - PolyPhy](https://img.shields.io/static/v1?label=PolyPhyHub&message=PolyPhy&color=blue&logo=github)](https://github.com/PolyPhyHub/PolyPhy "Go to GitHub repo")
+[![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/PolyPhyHub/PolyPhy/main/LICENSE)
+[![issues - PolyPhy](https://img.shields.io/github/issues/PolyPhyHub/PolyPhy)](https://github.com/PolyPhyHub/PolyPhy/issues)
 [![Python
 Package](https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml/badge.svg?branch=main)](https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml)
 [![image](https://ci.appveyor.com/api/projects/status/ynv14em7nm0tvjso/branch/main?svg=true)](https://ci.appveyor.com/project/PatriceJada/polyphy-uyogg/branch/main)
