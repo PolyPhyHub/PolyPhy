@@ -8,7 +8,7 @@ If you discover a security vulnerability or have any security concerns regarding
 
 To report a security issue, please follow these steps:
 
-1. Submit a detailed report via email to our security team at [oskar.elek@gmail.com](mailto:oskar.elek@gmail.com). Include all relevant information, such as the steps to reproduce the vulnerability, potential impact, and any proof-of-concept or exploit code if applicable.
+1. Submit a detailed report via email to our security team at [oskar[dot]elek[at]gmail[dot]com](mailto:oskar[dot]elek[at]gmail[dot]com). Include all relevant information, such as the steps to reproduce the vulnerability, potential impact, and any proof-of-concept or exploit code if applicable.
 2. Our security team will acknowledge your report within 72 hours, providing an assessment of the issue and an expected timeline for resolution.
 3. We will work with you to investigate and address the reported vulnerability promptly.
 4. Once the issue has been resolved, we will publicly acknowledge your contribution, if desired, and credit your responsible disclosure.
