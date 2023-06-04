@@ -44,4 +44,4 @@ jobs:
         pytest -v
     - name: Test with jupyter notebooks
       run: |
-        pytest --nbmake experiments/jupyter/*.ipynb
+        pytest --nbmake experiments/jupyter/production/*.ipynb
