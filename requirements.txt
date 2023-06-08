@@ -15,3 +15,8 @@ taichi==1.0.3
 toml
 tox
 yapf
+ipywidgets
+pyvista
+trimesh
+PyMCubes
+scikit-image
