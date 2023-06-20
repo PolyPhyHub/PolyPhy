@@ -1,5 +1,5 @@
-# Use a base image with the necessary dependencies
-FROM python:3.9-slim-buster
+# Use a base image with the necessary dependencies and CUDA support
+FROM nvidia/cuda:11.4.0-devel-ubuntu20.04
 
 # Set the working directory to /app
 WORKDIR /app
@@ -8,18 +8,23 @@ WORKDIR /app
 COPY . .
 
 # Install apt dependencies
-RUN apt update 
-RUN apt install git -y
+RUN apt update
+RUN apt install git python3-pip -y
+
+# Upgrade pip
+RUN pip3 install --no-cache-dir --upgrade pip
 
 # Install the dependencies
-RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install . -U
+RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install . -U
+
+# Install Vulkan
+RUN apt install libvulkan1 -y
 
 # Expose port 8000 for the web server after tox
 EXPOSE 8000
 
-# Expose port 8888 for the jupyter notebook
+# Expose port 8888 for the Jupyter notebook
 EXPOSE 8888
 
 # Set the default command to start
