@@ -6,302 +6,42 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import taichi as ti
 import taichi.math as timath
+
 import first
 import second
-
-## Default root directory
-ROOT = '../../../'
-
-## Data input file - leave empty for random set
-# INPUT_FILE = ''
-INPUT_FILE = ROOT + 'data/csv/sample_2D_linW.csv'
-# INPUT_FILE = ROOT + 'data/csv/sample_2D_logW.csv'
-
-## Simulation-wide constants
-N_DATA_DEFAULT = 1000
-N_AGENTS_DEFAULT = 1000000
-DOMAIN_SIZE_DEFAULT = (100.0, 100.0)
-TRACE_RESOLUTION_MAX = 1400
-DEPOSIT_DOWNSCALING_FACTOR = 1
-STEERING_RATE = 0.5
-MAX_DEPOSIT = 10.0
-DOMAIN_MARGIN = 0.05
-
-## State flags
-distance_sampling_distribution = second.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
-directional_sampling_distribution = second.EnumDirectionalSamplingDistribution.CONE
-directional_mutation_type = second.EnumDirectionalMutationType.PROBABILISTIC
-deposit_fetching_strategy = second.EnumDepositFetchingStrategy.NN_PERTURBED
-agent_boundary_handling = second.EnumAgentBoundaryHandling.WRAP
-
-## Initialize Taichi
-ti.init(arch=ti.cpu)
-rng = default_rng()
-
-## Initialize data and agents
-data = None
-DOMAIN_MIN = None
-DOMAIN_MAX = None
-DOMAIN_SIZE = None
-N_DATA = None
-N_AGENTS = None
-AVG_WEIGHT = 10.0
-
-## Load data
-## If no input file then generate a random dataset
-if len(INPUT_FILE) > 0:
-    data = np.loadtxt(INPUT_FILE, delimiter=",").astype(first.FLOAT_CPU)
-    N_DATA = data.shape[0]
-    N_AGENTS = N_AGENTS_DEFAULT
-    domain_min = (np.min(data[:,0]), np.min(data[:,1]))
-    domain_max = (np.max(data[:,0]), np.max(data[:,1]))
-    domain_size = np.subtract(domain_max, domain_min)
-    DOMAIN_MIN = (domain_min[0] - DOMAIN_MARGIN * domain_size[0], domain_min[1] - DOMAIN_MARGIN * domain_size[1])
-    DOMAIN_MAX = (domain_max[0] + DOMAIN_MARGIN * domain_size[0], domain_max[1] + DOMAIN_MARGIN * domain_size[1])
-    DOMAIN_SIZE = np.subtract(DOMAIN_MAX, DOMAIN_MIN)
-    AVG_WEIGHT = np.mean(data[:,2])
-else:
-    N_DATA = N_DATA_DEFAULT
-    N_AGENTS = N_AGENTS_DEFAULT
-    DOMAIN_SIZE = DOMAIN_SIZE_DEFAULT
-    DOMAIN_MIN = (0.0, 0.0)
-    DOMAIN_MAX = DOMAIN_SIZE_DEFAULT
-    data = np.zeros(shape=(N_DATA, 3), dtype = first.FLOAT_CPU)
-    data[:, 0] = rng.normal(loc = DOMAIN_MIN[0] + 0.5 * DOMAIN_MAX[0], scale = 0.13 * DOMAIN_SIZE[0], size = N_DATA)
-    data[:, 1] = rng.normal(loc = DOMAIN_MIN[1] + 0.5 * DOMAIN_MAX[1], scale = 0.13 * DOMAIN_SIZE[1], size = N_DATA)
-    data[:, 2] = AVG_WEIGHT
-
-## Derived constants
-DATA_TO_AGENTS_RATIO = first.FLOAT_CPU(N_DATA) / first.FLOAT_CPU(N_AGENTS)
-DOMAIN_SIZE_MAX = np.max([DOMAIN_SIZE[0], DOMAIN_SIZE[1]])
-TRACE_RESOLUTION = first.INT_CPU((first.FLOAT_CPU(TRACE_RESOLUTION_MAX) * DOMAIN_SIZE[0] / DOMAIN_SIZE_MAX, first.FLOAT_CPU(TRACE_RESOLUTION_MAX) * DOMAIN_SIZE[1] / DOMAIN_SIZE_MAX))
-DEPOSIT_RESOLUTION = (TRACE_RESOLUTION[0] // DEPOSIT_DOWNSCALING_FACTOR, TRACE_RESOLUTION[1] // DEPOSIT_DOWNSCALING_FACTOR)
-VIS_RESOLUTION = TRACE_RESOLUTION
-
-## Init agents
-agents = np.zeros(shape=(N_AGENTS, 4), dtype = first.FLOAT_CPU)
-agents[:, 0] = rng.uniform(low = DOMAIN_MIN[0] + 0.001, high = DOMAIN_MAX[0] - 0.001, size = N_AGENTS)
-agents[:, 1] = rng.uniform(low = DOMAIN_MIN[1] + 0.001, high = DOMAIN_MAX[1] - 0.001, size = N_AGENTS)
-agents[:, 2] = rng.uniform(low = 0.0, high = 2.0 * np.pi, size = N_AGENTS)
-agents[:, 3] = 1.0
-
-print('Simulation domain min:', DOMAIN_MIN)
-print('Simulation domain max:', DOMAIN_MAX)
-print('Simulation domain size:', DOMAIN_SIZE)
-print('Trace grid resolution:', TRACE_RESOLUTION)
-print('Deposit grid resolution:', DEPOSIT_RESOLUTION)
-print('Data sample:', data[0, :])
-print('Agent sample:', agents[0, :])
-print('Number of agents:', N_AGENTS)
-print('Number of data points:', N_DATA)
-
-## Allocate GPU memory fields
-## Keep in mind that the dimensions of these fields are important in the subsequent computations;
-## that means if they change the GPU kernels and the associated handling code must be modified as well
-data_field = ti.Vector.field(n = 3, dtype = first.FLOAT_GPU, shape = N_DATA)
-agents_field = ti.Vector.field(n = 4, dtype = first.FLOAT_GPU, shape = N_AGENTS)
-deposit_field = ti.Vector.field(n = 2, dtype = first.FLOAT_GPU, shape = DEPOSIT_RESOLUTION)
-trace_field = ti.Vector.field(n = 1, dtype = first.FLOAT_GPU, shape = TRACE_RESOLUTION)
-vis_field = ti.Vector.field(n = 3, dtype = first.FLOAT_GPU, shape = VIS_RESOLUTION)
-print('Total GPU memory allocated:', first.INT_CPU(4 * (\
-    data_field.shape[0] * 3 + \
-    agents_field.shape[0] * 4 + \
-    deposit_field.shape[0] * deposit_field.shape[1] * 2 + \
-    trace_field.shape[0] * trace_field.shape[1] * 1 + \
-    vis_field.shape[0] * vis_field.shape[1] * 3 \
-    ) / 2 ** 20), 'MB')
+import third
+import fourth
+import kernels
 
 @ti.data_oriented
-class Kernels:
-    ## Define all GPU functions and kernels for data and agent processing
-    @ti.kernel
-    def zero_field(self,f: ti.template()):
-        for cell in ti.grouped(f):
-            f[cell].fill(0.0)
-        return
-
-    @ti.kernel
-    def copy_field(self,dst: ti.template(), src: ti.template()): 
-        for cell in ti.grouped(dst):
-            dst[cell] = src[cell]
-        return
-
-    @ti.func
-    def world_to_grid_2D(self,pos_world, domain_min, domain_max, grid_resolution) -> first.VEC2i:
-        pos_relative = (pos_world - domain_min) / (domain_max - domain_min)
-        grid_coord = ti.cast(pos_relative * ti.cast(grid_resolution, first.FLOAT_GPU), first.INT_GPU)
-        return ti.max(first.VEC2i(0, 0), ti.min(grid_coord, grid_resolution - (1, 1)))
-
-    @ti.func
-    def angle_to_dir_2D(self,angle) -> first.VEC2f:
-        return timath.normalize(first.VEC2f(ti.cos(angle), ti.sin(angle)))
-
-    @ti.func
-    def custom_mod(self,a, b) -> first.FLOAT_GPU:
-        return a - b * ti.floor(a / b)
-
-    @ti.kernel
-    def data_step(self,data_deposit: first.FLOAT_GPU, current_deposit_index: first.INT_GPU):
-        for point in ti.ndrange(data_field.shape[0]):
-            pos = first.VEC2f(0.0, 0.0)
-            pos[0], pos[1], weight = data_field[point]
-            deposit_cell = self.world_to_grid_2D(pos, first.VEC2f(DOMAIN_MIN), first.VEC2f(DOMAIN_MAX), first.VEC2i(DEPOSIT_RESOLUTION))
-            deposit_field[deposit_cell][current_deposit_index] += data_deposit * weight
-        return
-
-    @ti.kernel
-    def agent_step(self,sense_distance: first.FLOAT_GPU,\
-                sense_angle: first.FLOAT_GPU,\
-                steering_rate: first.FLOAT_GPU,\
-                sampling_exponent: first.FLOAT_GPU,\
-                step_size: first.FLOAT_GPU,\
-                agent_deposit: first.FLOAT_GPU,\
-                current_deposit_index: first.INT_GPU,\
-                distance_sampling_distribution: first.INT_GPU,\
-                directional_sampling_distribution: first.INT_GPU,\
-                directional_mutation_type: first.INT_GPU,\
-                deposit_fetching_strategy: first.INT_GPU,\
-                agent_boundary_handling: first.INT_GPU):
-        for agent in ti.ndrange(agents_field.shape[0]):
-            pos = first.VEC2f(0.0, 0.0)
-            pos[0], pos[1], angle, weight = agents_field[agent]
-            
-            ## Generate new mutated angle by perturbing the original
-            dir_fwd = self.angle_to_dir_2D(angle)
-            angle_mut = angle
-            if directional_sampling_distribution == second.EnumDirectionalSamplingDistribution.DISCRETE:
-                angle_mut += (1.0 if ti.random(dtype=first.FLOAT_GPU) > 0.5 else -1.0) * sense_angle
-            elif directional_sampling_distribution == second.EnumDirectionalSamplingDistribution.CONE:
-                angle_mut += 2.0 * (ti.random(dtype=first.FLOAT_GPU) - 0.5) * sense_angle
-            dir_mut = self.angle_to_dir_2D(angle_mut)
-
-            ## Generate sensing distance for the agent, constant or probabilistic
-            agent_sensing_distance = sense_distance
-            distance_scaling_factor = 1.0
-            if distance_sampling_distribution == second.EnumDistanceSamplingDistribution.EXPONENTIAL:
-                xi = timath.clamp(ti.random(dtype=first.FLOAT_GPU), 0.001, 0.999) ## log & pow are unstable in extremes
-                distance_scaling_factor = -ti.log(xi)
-            elif distance_sampling_distribution == second.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN:
-                xi = timath.clamp(ti.random(dtype=first.FLOAT_GPU), 0.001, 0.999) ## log & pow are unstable in extremes
-                distance_scaling_factor = -0.3033 * ti.log( (ti.pow(xi + 0.005, -0.4) - 0.9974) / 7.326 )
-            agent_sensing_distance *= distance_scaling_factor
-
-            ## Fetch deposit to guide the agent
-            deposit_fwd = 1.0
-            deposit_mut = 0.0
-            if deposit_fetching_strategy == second.EnumDepositFetchingStrategy.NN:
-                deposit_fwd = deposit_field[k.world_to_grid_2D(pos + agent_sensing_distance * dir_fwd, first.VEC2f(DOMAIN_MIN), first.VEC2f(DOMAIN_MAX), first.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
-                deposit_mut = deposit_field[k.world_to_grid_2D(pos + agent_sensing_distance * dir_mut, first.VEC2f(DOMAIN_MIN), first.VEC2f(DOMAIN_MAX), first.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
-            elif deposit_fetching_strategy == second.EnumDepositFetchingStrategy.NN_PERTURBED:
-                ## Fetches the deposit by perturbing the original position by a small delta
-                ## This provides cheap stochastic filtering instead of multi-fetch filters
-                field_dd = 2.0 * ti.cast(DOMAIN_SIZE[0], first.FLOAT_GPU) / ti.cast(DEPOSIT_RESOLUTION[0], first.FLOAT_GPU)
-                pos_fwd = pos + agent_sensing_distance * dir_fwd + (field_dd * ti.random(dtype=first.FLOAT_GPU) * self.angle_to_dir_2D(2.0 * timath.pi * ti.random(dtype=first.FLOAT_GPU)))
-                deposit_fwd = deposit_field[k.world_to_grid_2D(pos_fwd, first.VEC2f(DOMAIN_MIN), first.VEC2f(DOMAIN_MAX), first.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
-                pos_mut = pos + agent_sensing_distance * dir_mut + (field_dd * ti.random(dtype=first.FLOAT_GPU) * self.angle_to_dir_2D(2.0 * timath.pi * ti.random(dtype=first.FLOAT_GPU)))
-                deposit_mut = deposit_field[k.world_to_grid_2D(pos_mut, first.VEC2f(DOMAIN_MIN), first.VEC2f(DOMAIN_MAX), first.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
-
-            ## Generate new direction for the agent based on the sampled deposit
-            angle_new = angle
-            if directional_mutation_type == second.EnumDirectionalMutationType.DETERMINISTIC:
-                angle_new = (steering_rate * angle_mut + (1.0-steering_rate) * angle) if (deposit_mut > deposit_fwd) else (angle)
-            elif directional_mutation_type == second.EnumDirectionalMutationType.PROBABILISTIC:
-                p_remain = ti.pow(deposit_fwd, sampling_exponent)
-                p_mutate = ti.pow(deposit_mut, sampling_exponent)
-                mutation_probability = p_mutate / (p_remain + p_mutate)
-                angle_new = (steering_rate * angle_mut + (1.0-steering_rate) * angle) if (ti.random(dtype=first.FLOAT_GPU) < mutation_probability) else (angle)
-            dir_new = self.angle_to_dir_2D(angle_new)
-            pos_new = pos + step_size * distance_scaling_factor * dir_new
-
-            ## Agent behavior at domain boundaries
-            if agent_boundary_handling == second.EnumAgentBoundaryHandling.WRAP:
-                pos_new[0] = self.custom_mod(pos_new[0] - DOMAIN_MIN[0] + DOMAIN_SIZE[0], DOMAIN_SIZE[0]) + DOMAIN_MIN[0]
-                pos_new[1] = self.custom_mod(pos_new[1] - DOMAIN_MIN[1] + DOMAIN_SIZE[1], DOMAIN_SIZE[1]) + DOMAIN_MIN[1]
-            elif agent_boundary_handling == second.EnumAgentBoundaryHandling.REINIT_CENTER:
-                if pos_new[0] <= DOMAIN_MIN[0] or pos_new[0] >= DOMAIN_MAX[0] or pos_new[1] <= DOMAIN_MIN[1] or pos_new[1] >= DOMAIN_MAX[1]:
-                    pos_new[0] = 0.5 * (DOMAIN_MIN[0] + DOMAIN_MAX[0])
-                    pos_new[1] = 0.5 * (DOMAIN_MIN[1] + DOMAIN_MAX[1])
-            elif agent_boundary_handling == second.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
-                if pos_new[0] <= DOMAIN_MIN[0] or pos_new[0] >= DOMAIN_MAX[0] or pos_new[1] <= DOMAIN_MIN[1] or pos_new[1] >= DOMAIN_MAX[1]:
-                    pos_new[0] = DOMAIN_MIN[0] + timath.clamp(ti.random(dtype=first.FLOAT_GPU), 0.001, 0.999) * DOMAIN_SIZE[0]
-                    pos_new[1] = DOMAIN_MIN[1] + timath.clamp(ti.random(dtype=first.FLOAT_GPU), 0.001, 0.999) * DOMAIN_SIZE[1]
-
-            agents_field[agent][0] = pos_new[0]
-            agents_field[agent][1] = pos_new[1]
-            agents_field[agent][2] = angle_new
-
-            ## Generate deposit and trace at the new position
-            deposit_cell = k.world_to_grid_2D(pos_new, first.VEC2f(DOMAIN_MIN), first.VEC2f(DOMAIN_MAX), first.VEC2i(DEPOSIT_RESOLUTION))
-            deposit_field[deposit_cell][current_deposit_index] += agent_deposit * weight
-
-            trace_cell = k.world_to_grid_2D(pos_new, first.VEC2f(DOMAIN_MIN), first.VEC2f(DOMAIN_MAX), first.VEC2i(TRACE_RESOLUTION))
-            trace_field[trace_cell][0] += ti.max(1.0e-4, ti.cast(N_DATA, first.FLOAT_GPU) / ti.cast(N_AGENTS, first.FLOAT_GPU)) * weight
-        return
-
-    DIFFUSION_KERNEL = [1.0, 1.0, 0.707]
-    DIFFUSION_KERNEL_NORM = DIFFUSION_KERNEL[0] + 4.0 * DIFFUSION_KERNEL[1] + 4.0 * DIFFUSION_KERNEL[2]
-
-    @ti.kernel
-    def deposit_relaxation_step(self,attenuation: first.FLOAT_GPU, current_deposit_index: first.INT_GPU):
-        for cell in ti.grouped(deposit_field):
-            ## The "beautiful" expression below implements a 3x3 kernel diffusion with manually wrapped addressing
-            ## Taichi doesn't support modulo for tuples so each dimension is handled separately
-            value =   self.DIFFUSION_KERNEL[0] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]
-            deposit_field[cell][1 - current_deposit_index] = attenuation * value / self.DIFFUSION_KERNEL_NORM
-        return
-
-    @ti.kernel
-    def trace_relaxation_step(self,attenuation: first.FLOAT_GPU):
-        for cell in ti.grouped(trace_field):
-            ## Perturb the attenuation by a small factor to avoid accumulating quantization errors
-            trace_field[cell][0] *= attenuation - 0.001 + 0.002 * ti.random(dtype=first.FLOAT_GPU)
-        return
-
-    @ti.kernel
-    def render_visualization(self,deposit_vis: first.FLOAT_GPU, trace_vis: first.FLOAT_GPU, current_deposit_index: first.INT_GPU):
-        for x, y in ti.ndrange(vis_field.shape[0], vis_field.shape[1]):
-            deposit_val = deposit_field[x * DEPOSIT_RESOLUTION[0] // VIS_RESOLUTION[0], y * DEPOSIT_RESOLUTION[1] // VIS_RESOLUTION[1]][current_deposit_index]
-            trace_val = trace_field[x * TRACE_RESOLUTION[0] // VIS_RESOLUTION[0], y * TRACE_RESOLUTION[1] // VIS_RESOLUTION[1]]
-            vis_field[x, y] = ti.pow(first.VEC3f(trace_vis * trace_val, deposit_vis * deposit_val, ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)), 1.0/2.2)
-        return
-
-@ti.data_oriented
-class FinalKernels(Kernels):
+class FinalKernels(kernels.Kernels):
     @ti.kernel
     def render_visualization(self,deposit_vis: first.FLOAT_GPU, trace_vis: first.FLOAT_GPU, current_deposit_index: first.INT_GPU):
         print("Prashant's inherit works!")
-        for x, y in ti.ndrange(vis_field.shape[0], vis_field.shape[1]):
-            deposit_val = deposit_field[x * DEPOSIT_RESOLUTION[0] // VIS_RESOLUTION[0], y * DEPOSIT_RESOLUTION[1] // VIS_RESOLUTION[1]][current_deposit_index]
-            trace_val = trace_field[x * TRACE_RESOLUTION[0] // VIS_RESOLUTION[0], y * TRACE_RESOLUTION[1] // VIS_RESOLUTION[1]]
-            vis_field[x, y] = ti.pow(first.VEC3f(trace_vis * trace_val, deposit_vis * deposit_val, ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)), 1.0/2.2)
+        for x, y in ti.ndrange(fourth.vis_field.shape[0], fourth.vis_field.shape[1]):
+            deposit_val = fourth.deposit_field[x * fourth.DEPOSIT_RESOLUTION[0] // fourth.VIS_RESOLUTION[0], y * fourth.DEPOSIT_RESOLUTION[1] // fourth.VIS_RESOLUTION[1]][current_deposit_index]
+            trace_val = fourth.trace_field[x * fourth.TRACE_RESOLUTION[0] // fourth.VIS_RESOLUTION[0], y * fourth.TRACE_RESOLUTION[1] // fourth.VIS_RESOLUTION[1]]
+            fourth.vis_field[x, y] = ti.pow(first.VEC3f(trace_vis * trace_val, deposit_vis * deposit_val, ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)), 1.0/2.2)
         return
 
 k = FinalKernels()
 
 ## Initialize GPU fields
-data_field.from_numpy(data)
-agents_field.from_numpy(agents)
-k.zero_field(deposit_field)
-k.zero_field(trace_field)
-k.zero_field(vis_field)
+fourth.data_field.from_numpy(fourth.data)
+fourth.agents_field.from_numpy(fourth.agents)
+k.zero_field(fourth.deposit_field)
+k.zero_field(fourth.trace_field)
+k.zero_field(fourth.vis_field)
 
 ## Main simulation & vis loop
-sense_distance = 0.005 * DOMAIN_SIZE_MAX
+sense_distance = 0.005 * fourth.DOMAIN_SIZE_MAX
 sense_angle = 1.5
-step_size = 0.0005 * DOMAIN_SIZE_MAX
+step_size = 0.0005 * fourth.DOMAIN_SIZE_MAX
 sampling_exponent = 2.0
 deposit_attenuation = 0.9
 trace_attenuation = 0.96
-data_deposit = 0.1 * MAX_DEPOSIT
-agent_deposit = data_deposit * DATA_TO_AGENTS_RATIO
+data_deposit = 0.1 * third.MAX_DEPOSIT
+agent_deposit = data_deposit * fourth.DATA_TO_AGENTS_RATIO
 deposit_vis = 0.1
 trace_vis = 1.0
 
@@ -315,10 +55,10 @@ hide_UI = False
 def edit_data(edit_index: first.INT_CPU) -> first.INT_CPU:
     mouse_rel_pos = window.get_cursor_pos()
     mouse_rel_pos = (np.min([np.max([0.001, window.get_cursor_pos()[0]]), 0.999]), np.min([np.max([0.001, window.get_cursor_pos()[1]]), 0.999]))
-    mouse_pos = np.add(DOMAIN_MIN, np.multiply(mouse_rel_pos, DOMAIN_SIZE))
+    mouse_pos = np.add(fourth.DOMAIN_MIN, np.multiply(mouse_rel_pos, fourth.DOMAIN_SIZE))
     data[edit_index, :] = mouse_pos[0], mouse_pos[1], AVG_WEIGHT
     data_field.from_numpy(data)
-    edit_index = (edit_index + 1) % N_DATA
+    edit_index = (edit_index + 1) % fourth.N_DATA
     return edit_index
 
 ## Current timestamp
@@ -330,15 +70,15 @@ def store_fit():
     if not os.path.exists(ROOT + "data/fits/"):
         os.makedirs(ROOT + "data/fits/")
     current_stamp = stamp()
-    deposit = deposit_field.to_numpy()
+    deposit = fourth.deposit_field.to_numpy()
     np.save(ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
-    trace = trace_field.to_numpy()
+    trace = fourth.trace_field.to_numpy()
     np.save(ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
     return current_stamp, deposit, trace
 
 ## check if file exists
 if os.path.exists("/tmp/flag") == False:
-    window = ti.ui.Window('PolyPhy', (vis_field.shape[0], vis_field.shape[1]), show_window = True)
+    window = ti.ui.Window('PolyPhy', (fourth.vis_field.shape[0], fourth.vis_field.shape[1]), show_window = True)
     window.show()
     canvas = window.get_canvas()
     
@@ -362,52 +102,52 @@ if os.path.exists("/tmp/flag") == False:
         
         if not hide_UI:
             ## Draw main interactive control GUI
-            window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / first.FLOAT_CPU(VIS_RESOLUTION[0]), 0.74 * 1024.0 / first.FLOAT_CPU(VIS_RESOLUTION[1]))
+            window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[0]), 0.74 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[1]))
             window.GUI.text("MCPM parameters:")
-            sense_distance = window.GUI.slider_float('Sensing dist', sense_distance, 0.1, 0.05 * np.max([DOMAIN_SIZE[0], DOMAIN_SIZE[1]]))
+            sense_distance = window.GUI.slider_float('Sensing dist', sense_distance, 0.1, 0.05 * np.max([fourth.DOMAIN_SIZE[0], fourth.DOMAIN_SIZE[1]]))
             sense_angle = window.GUI.slider_float('Sensing angle', sense_angle, 0.01, 0.5 * np.pi)
             sampling_exponent = window.GUI.slider_float('Sampling expo', sampling_exponent, 1.0, 10.0)
-            step_size = window.GUI.slider_float('Step size', step_size, 0.0, 0.005 * np.max([DOMAIN_SIZE[0], DOMAIN_SIZE[1]]))
-            data_deposit = window.GUI.slider_float('Data deposit', data_deposit, 0.0, MAX_DEPOSIT)
-            agent_deposit = window.GUI.slider_float('Agent deposit', agent_deposit, 0.0, 10.0 * MAX_DEPOSIT * DATA_TO_AGENTS_RATIO)
+            step_size = window.GUI.slider_float('Step size', step_size, 0.0, 0.005 * np.max([fourth.DOMAIN_SIZE[0], fourth.DOMAIN_SIZE[1]]))
+            data_deposit = window.GUI.slider_float('Data deposit', data_deposit, 0.0, third.MAX_DEPOSIT)
+            agent_deposit = window.GUI.slider_float('Agent deposit', agent_deposit, 0.0, 10.0 * third.MAX_DEPOSIT * fourth.DATA_TO_AGENTS_RATIO)
             deposit_attenuation = window.GUI.slider_float('Deposit attn', deposit_attenuation, 0.8, 0.999)
             trace_attenuation = window.GUI.slider_float('Trace attn', trace_attenuation, 0.8, 0.999)
             deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(deposit_vis, 10.0), -3.0, 3.0))
             trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(trace_vis, 10.0), -3.0, 3.0))
     
             window.GUI.text("Distance distribution:")
-            if window.GUI.checkbox("Constant", distance_sampling_distribution == second.EnumDistanceSamplingDistribution.CONSTANT):
-                distance_sampling_distribution = second.EnumDistanceSamplingDistribution.CONSTANT
-            if window.GUI.checkbox("Exponential", distance_sampling_distribution == second.EnumDistanceSamplingDistribution.EXPONENTIAL):
-                distance_sampling_distribution = second.EnumDistanceSamplingDistribution.EXPONENTIAL
-            if window.GUI.checkbox("Maxwell-Boltzmann", distance_sampling_distribution == second.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
-                distance_sampling_distribution = second.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
+            if window.GUI.checkbox("Constant", third.distance_sampling_distribution == second.EnumDistanceSamplingDistribution.CONSTANT):
+                third.distance_sampling_distribution = second.EnumDistanceSamplingDistribution.CONSTANT
+            if window.GUI.checkbox("Exponential", third.distance_sampling_distribution == second.EnumDistanceSamplingDistribution.EXPONENTIAL):
+                third.distance_sampling_distribution = second.EnumDistanceSamplingDistribution.EXPONENTIAL
+            if window.GUI.checkbox("Maxwell-Boltzmann", third.distance_sampling_distribution == second.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
+                third.distance_sampling_distribution = second.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
     
             window.GUI.text("Directional distribution:")
-            if window.GUI.checkbox("Discrete", directional_sampling_distribution == second.EnumDirectionalSamplingDistribution.DISCRETE):
-                directional_sampling_distribution = second.EnumDirectionalSamplingDistribution.DISCRETE
-            if window.GUI.checkbox("Cone", directional_sampling_distribution == second.EnumDirectionalSamplingDistribution.CONE):
-                directional_sampling_distribution = second.EnumDirectionalSamplingDistribution.CONE
+            if window.GUI.checkbox("Discrete", third.directional_sampling_distribution == second.EnumDirectionalSamplingDistribution.DISCRETE):
+                third.directional_sampling_distribution = second.EnumDirectionalSamplingDistribution.DISCRETE
+            if window.GUI.checkbox("Cone", third.directional_sampling_distribution == second.EnumDirectionalSamplingDistribution.CONE):
+                third.directional_sampling_distribution = second.EnumDirectionalSamplingDistribution.CONE
     
             window.GUI.text("Directional mutation:")
-            if window.GUI.checkbox("Deterministic", directional_mutation_type == second.EnumDirectionalMutationType.DETERMINISTIC):
-                directional_mutation_type = second.EnumDirectionalMutationType.DETERMINISTIC
-            if window.GUI.checkbox("Stochastic", directional_mutation_type == second.EnumDirectionalMutationType.PROBABILISTIC):
-                directional_mutation_type = second.EnumDirectionalMutationType.PROBABILISTIC
+            if window.GUI.checkbox("Deterministic", third.directional_mutation_type == second.EnumDirectionalMutationType.DETERMINISTIC):
+                third.directional_mutation_type = second.EnumDirectionalMutationType.DETERMINISTIC
+            if window.GUI.checkbox("Stochastic", third.directional_mutation_type == second.EnumDirectionalMutationType.PROBABILISTIC):
+                third.directional_mutation_type = second.EnumDirectionalMutationType.PROBABILISTIC
     
             window.GUI.text("Deposit fetching:")
-            if window.GUI.checkbox("Nearest neighbor", deposit_fetching_strategy == second.EnumDepositFetchingStrategy.NN):
-                deposit_fetching_strategy = second.EnumDepositFetchingStrategy.NN
-            if window.GUI.checkbox("Noise-perturbed NN", deposit_fetching_strategy == second.EnumDepositFetchingStrategy.NN_PERTURBED):
-                deposit_fetching_strategy = second.EnumDepositFetchingStrategy.NN_PERTURBED
+            if window.GUI.checkbox("Nearest neighbor", third.deposit_fetching_strategy == second.EnumDepositFetchingStrategy.NN):
+                third.deposit_fetching_strategy = second.EnumDepositFetchingStrategy.NN
+            if window.GUI.checkbox("Noise-perturbed NN", third.deposit_fetching_strategy == second.EnumDepositFetchingStrategy.NN_PERTURBED):
+                third.deposit_fetching_strategy = second.EnumDepositFetchingStrategy.NN_PERTURBED
     
             window.GUI.text("Agent boundary handling:")
-            if window.GUI.checkbox("Wrap around", agent_boundary_handling == second.EnumAgentBoundaryHandling.WRAP):
-                agent_boundary_handling = second.EnumAgentBoundaryHandling.WRAP
-            if window.GUI.checkbox("Reinitialize center", agent_boundary_handling == second.EnumAgentBoundaryHandling.REINIT_CENTER):
-                agent_boundary_handling = second.EnumAgentBoundaryHandling.REINIT_CENTER
-            if window.GUI.checkbox("Reinitialize randomly", agent_boundary_handling == second.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
-                agent_boundary_handling = second.EnumAgentBoundaryHandling.REINIT_RANDOMLY
+            if window.GUI.checkbox("Wrap around", third.agent_boundary_handling == second.EnumAgentBoundaryHandling.WRAP):
+                third.agent_boundary_handling = second.EnumAgentBoundaryHandling.WRAP
+            if window.GUI.checkbox("Reinitialize center", third.agent_boundary_handling == second.EnumAgentBoundaryHandling.REINIT_CENTER):
+                third.agent_boundary_handling = second.EnumAgentBoundaryHandling.REINIT_CENTER
+            if window.GUI.checkbox("Reinitialize randomly", third.agent_boundary_handling == second.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
+                third.agent_boundary_handling = second.EnumAgentBoundaryHandling.REINIT_RANDOMLY
     
             window.GUI.text("Misc controls:")
             do_simulate = window.GUI.checkbox("Run simulation", do_simulate)
@@ -418,7 +158,7 @@ if os.path.exists("/tmp/flag") == False:
     
             ## Help window
             ## Do not exceed prescribed line length of 120 characters, there is no text wrapping in Taichi GUI for now
-            window.GUI.begin('Help', 0.35 * 1024.0 / first.FLOAT_CPU(VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / first.FLOAT_CPU(VIS_RESOLUTION[1]))
+            window.GUI.begin('Help', 0.35 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[1]))
             window.GUI.text("Welcome to PolyPhy 2D GUI variant written by researchers at UCSC/OSPO with the help of numerous external contributors\n(https://github.com/PolyPhyHub). PolyPhy implements MCPM, an agent-based, stochastic, pattern forming algorithm designed\nby Elek et al, inspired by Physarum polycephalum slime mold. Below is a quick reference guide explaining the parameters\nand features available in the interface. The reference as well as other panels can be hidden using the arrow button, moved,\nand rescaled.")
             window.GUI.text("")
             window.GUI.text("PARAMETERS")
@@ -461,23 +201,23 @@ if os.path.exists("/tmp/flag") == False:
             k.agent_step(\
                 sense_distance,\
                 sense_angle,\
-                STEERING_RATE,\
+                third.STEERING_RATE,\
                 sampling_exponent,\
                 step_size,\
                 agent_deposit,\
                 current_deposit_index,\
-                distance_sampling_distribution,\
-                directional_sampling_distribution,\
-                directional_mutation_type,\
-                deposit_fetching_strategy,\
-                agent_boundary_handling)
+                third.distance_sampling_distribution,\
+                third.directional_sampling_distribution,\
+                third.directional_mutation_type,\
+                third.deposit_fetching_strategy,\
+                third.agent_boundary_handling)
             k.deposit_relaxation_step(deposit_attenuation, current_deposit_index)
             k.trace_relaxation_step(trace_attenuation)
             current_deposit_index = 1 - current_deposit_index
     
         ## Render visualization
         k.render_visualization(deposit_vis, trace_vis, current_deposit_index)
-        canvas.set_image(vis_field)
+        canvas.set_image(fourth.vis_field)
     
         if do_screenshot:
             window.write_image(ROOT + 'capture/screenshot_' + stamp() + '.png') ## Must appear before window.show() call
@@ -491,9 +231,9 @@ if os.path.exists("/tmp/flag") == False:
 
 ## Store fits
 current_stamp = stamp()
-deposit = deposit_field.to_numpy()
+deposit = fourth.deposit_field.to_numpy()
 np.save(ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
-trace = trace_field.to_numpy()
+trace = fourth.trace_field.to_numpy()
 np.save(ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
 
 ## Plot results
