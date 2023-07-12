@@ -150,7 +150,6 @@ print('Total GPU memory allocated:', INT_CPU(4 * (\
 
 @ti.data_oriented
 class Kernels:
-
     ## Define all GPU functions and kernels for data and agent processing
     @ti.kernel
     def zero_field(self,f: ti.template()):
@@ -311,7 +310,18 @@ class Kernels:
             vis_field[x, y] = ti.pow(VEC3f(trace_vis * trace_val, deposit_vis * deposit_val, ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)), 1.0/2.2)
         return
 
-k = Kernels()
+@ti.data_oriented
+class FinalKernels(Kernels):
+    @ti.kernel
+    def render_visualization(self,deposit_vis: FLOAT_GPU, trace_vis: FLOAT_GPU, current_deposit_index: INT_GPU):
+        print("Prashant's inherit works!")
+        for x, y in ti.ndrange(vis_field.shape[0], vis_field.shape[1]):
+            deposit_val = deposit_field[x * DEPOSIT_RESOLUTION[0] // VIS_RESOLUTION[0], y * DEPOSIT_RESOLUTION[1] // VIS_RESOLUTION[1]][current_deposit_index]
+            trace_val = trace_field[x * TRACE_RESOLUTION[0] // VIS_RESOLUTION[0], y * TRACE_RESOLUTION[1] // VIS_RESOLUTION[1]]
+            vis_field[x, y] = ti.pow(VEC3f(trace_vis * trace_val, deposit_vis * deposit_val, ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)), 1.0/2.2)
+        return
+
+k = FinalKernels()
 
 ## Initialize GPU fields
 data_field.from_numpy(data)
