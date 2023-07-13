@@ -11,60 +11,7 @@ import first
 import second
 import third
 import fourth
-import kernels
-import finalKernels
-
-k = finalKernels.FinalKernels()
-
-## Initialize GPU fields
-fourth.data_field.from_numpy(fourth.data)
-fourth.agents_field.from_numpy(fourth.agents)
-k.zero_field(fourth.deposit_field)
-k.zero_field(fourth.trace_field)
-k.zero_field(fourth.vis_field)
-
-## Main simulation & vis loop
-sense_distance = 0.005 * fourth.DOMAIN_SIZE_MAX
-sense_angle = 1.5
-step_size = 0.0005 * fourth.DOMAIN_SIZE_MAX
-sampling_exponent = 2.0
-deposit_attenuation = 0.9
-trace_attenuation = 0.96
-data_deposit = 0.1 * third.MAX_DEPOSIT
-agent_deposit = data_deposit * fourth.DATA_TO_AGENTS_RATIO
-deposit_vis = 0.1
-trace_vis = 1.0
-
-current_deposit_index = 0
-data_edit_index = 0
-do_simulate = True
-hide_UI = False
-
-## Insert a new data point, Round-Robin style, and upload to GPU
-## This can be very costly for many data points! (eg 10^5 or more)
-def edit_data(edit_index: first.INT_CPU) -> first.INT_CPU:
-    mouse_rel_pos = window.get_cursor_pos()
-    mouse_rel_pos = (np.min([np.max([0.001, window.get_cursor_pos()[0]]), 0.999]), np.min([np.max([0.001, window.get_cursor_pos()[1]]), 0.999]))
-    mouse_pos = np.add(fourth.DOMAIN_MIN, np.multiply(mouse_rel_pos, fourth.DOMAIN_SIZE))
-    data[edit_index, :] = mouse_pos[0], mouse_pos[1], AVG_WEIGHT
-    data_field.from_numpy(data)
-    edit_index = (edit_index + 1) % fourth.N_DATA
-    return edit_index
-
-## Current timestamp
-def stamp() -> str:
-    return datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d_%H-%M-%S")
-
-## Store current deposit and trace fields
-def store_fit():
-    if not os.path.exists(ROOT + "data/fits/"):
-        os.makedirs(ROOT + "data/fits/")
-    current_stamp = stamp()
-    deposit = fourth.deposit_field.to_numpy()
-    np.save(ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
-    trace = fourth.trace_field.to_numpy()
-    np.save(ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
-    return current_stamp, deposit, trace
+import final
 
 ## check if file exists
 if os.path.exists("/tmp/flag") == False:
@@ -86,24 +33,24 @@ if os.path.exists("/tmp/flag") == False:
             if window.event.key == 'h': hide_UI = not hide_UI
             if window.event.key in [ti.ui.ESCAPE]: do_quit = True
             if window.event.key in [ti.ui.LMB]:
-                data_edit_index = edit_data(data_edit_index)
+                final.data_edit_index = final.edit_data(final.data_edit_index)
         if window.is_pressed(ti.ui.RMB):
-            data_edit_index = edit_data(data_edit_index)
+            final.data_edit_index = final.edit_data(final.data_edit_index)
         
-        if not hide_UI:
+        if not final.hide_UI:
             ## Draw main interactive control GUI
             window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[0]), 0.74 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[1]))
             window.GUI.text("MCPM parameters:")
-            sense_distance = window.GUI.slider_float('Sensing dist', sense_distance, 0.1, 0.05 * np.max([fourth.DOMAIN_SIZE[0], fourth.DOMAIN_SIZE[1]]))
-            sense_angle = window.GUI.slider_float('Sensing angle', sense_angle, 0.01, 0.5 * np.pi)
-            sampling_exponent = window.GUI.slider_float('Sampling expo', sampling_exponent, 1.0, 10.0)
-            step_size = window.GUI.slider_float('Step size', step_size, 0.0, 0.005 * np.max([fourth.DOMAIN_SIZE[0], fourth.DOMAIN_SIZE[1]]))
-            data_deposit = window.GUI.slider_float('Data deposit', data_deposit, 0.0, third.MAX_DEPOSIT)
-            agent_deposit = window.GUI.slider_float('Agent deposit', agent_deposit, 0.0, 10.0 * third.MAX_DEPOSIT * fourth.DATA_TO_AGENTS_RATIO)
-            deposit_attenuation = window.GUI.slider_float('Deposit attn', deposit_attenuation, 0.8, 0.999)
-            trace_attenuation = window.GUI.slider_float('Trace attn', trace_attenuation, 0.8, 0.999)
-            deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(deposit_vis, 10.0), -3.0, 3.0))
-            trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(trace_vis, 10.0), -3.0, 3.0))
+            final.sense_distance = window.GUI.slider_float('Sensing dist', final.sense_distance, 0.1, 0.05 * np.max([fourth.DOMAIN_SIZE[0], fourth.DOMAIN_SIZE[1]]))
+            final.sense_angle = window.GUI.slider_float('Sensing angle', final.sense_angle, 0.01, 0.5 * np.pi)
+            final.sampling_exponent = window.GUI.slider_float('Sampling expo', final.sampling_exponent, 1.0, 10.0)
+            final.step_size = window.GUI.slider_float('Step size', final.step_size, 0.0, 0.005 * np.max([fourth.DOMAIN_SIZE[0], fourth.DOMAIN_SIZE[1]]))
+            final.data_deposit = window.GUI.slider_float('Data deposit', final.data_deposit, 0.0, third.MAX_DEPOSIT)
+            final.agent_deposit = window.GUI.slider_float('Agent deposit', final.agent_deposit, 0.0, 10.0 * third.MAX_DEPOSIT * fourth.DATA_TO_AGENTS_RATIO)
+            final.deposit_attenuation = window.GUI.slider_float('Deposit attn', final.deposit_attenuation, 0.8, 0.999)
+            final.trace_attenuation = window.GUI.slider_float('Trace attn', final.trace_attenuation, 0.8, 0.999)
+            final.deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(final.deposit_vis, 10.0), -3.0, 3.0))
+            final.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(final.trace_vis, 10.0), -3.0, 3.0))
     
             window.GUI.text("Distance distribution:")
             if window.GUI.checkbox("Constant", third.distance_sampling_distribution == second.EnumDistanceSamplingDistribution.CONSTANT):
@@ -140,7 +87,7 @@ if os.path.exists("/tmp/flag") == False:
                 third.agent_boundary_handling = second.EnumAgentBoundaryHandling.REINIT_RANDOMLY
     
             window.GUI.text("Misc controls:")
-            do_simulate = window.GUI.checkbox("Run simulation", do_simulate)
+            final.do_simulate = window.GUI.checkbox("Run simulation", final.do_simulate)
             do_export = do_export | window.GUI.button('Export fit')
             do_screenshot = do_screenshot | window.GUI.button('Screenshot')
             do_quit = do_quit | window.GUI.button('Quit')
@@ -186,59 +133,59 @@ if os.path.exists("/tmp/flag") == False:
             window.GUI.end()
     
         ## Main simulation sequence
-        if do_simulate:
-            k.data_step(data_deposit, current_deposit_index)
-            k.agent_step(\
-                sense_distance,\
-                sense_angle,\
+        if final.do_simulate:
+            final.k.data_step(final.data_deposit, final.current_deposit_index)
+            final.k.agent_step(\
+                final.sense_distance,\
+                final.sense_angle,\
                 third.STEERING_RATE,\
-                sampling_exponent,\
-                step_size,\
-                agent_deposit,\
-                current_deposit_index,\
+                final.sampling_exponent,\
+                final.step_size,\
+                final.agent_deposit,\
+                final.current_deposit_index,\
                 third.distance_sampling_distribution,\
                 third.directional_sampling_distribution,\
                 third.directional_mutation_type,\
                 third.deposit_fetching_strategy,\
                 third.agent_boundary_handling)
-            k.deposit_relaxation_step(deposit_attenuation, current_deposit_index)
-            k.trace_relaxation_step(trace_attenuation)
-            current_deposit_index = 1 - current_deposit_index
+            final.k.deposit_relaxation_step(final.deposit_attenuation, final.current_deposit_index)
+            final.k.trace_relaxation_step(final.trace_attenuation)
+            final.current_deposit_index = 1 - final.current_deposit_index
     
         ## Render visualization
-        k.render_visualization(deposit_vis, trace_vis, current_deposit_index)
+        final.k.render_visualization(final.deposit_vis, final.trace_vis, final.current_deposit_index)
         canvas.set_image(fourth.vis_field)
     
         if do_screenshot:
-            window.write_image(ROOT + 'capture/screenshot_' + stamp() + '.png') ## Must appear before window.show() call
+            window.write_image(fourth.ROOT + 'capture/screenshot_' + final.stamp() + '.png') ## Must appear before window.show() call
         window.show()
         if do_export:
-            store_fit()
+            final.store_fit()
         if do_quit:
             break
         
     window.destroy()
 
 ## Store fits
-current_stamp = stamp()
+current_stamp = final.stamp()
 deposit = fourth.deposit_field.to_numpy()
-np.save(ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
+np.save(fourth.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
 trace = fourth.trace_field.to_numpy()
-np.save(ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
+np.save(fourth.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
 
 ## Plot results
 ## Compare with stored fields
-current_stamp, deposit, trace = store_fit()
+current_stamp, deposit, trace = final.store_fit()
 
 plt.figure(figsize = (10.0, 10.0))
 plt.imshow(np.flip(np.transpose(deposit[:,:,0]), axis=0))
 plt.figure(figsize = (10.0, 10.0))
-deposit_restored = np.load(ROOT + 'data/fits/deposit_' + current_stamp + '.npy')
+deposit_restored = np.load(fourth.ROOT + 'data/fits/deposit_' + current_stamp + '.npy')
 plt.imshow(np.flip(np.transpose(deposit_restored[:,:,0]), axis=0))
 
 plt.figure(figsize = (10.0, 10.0))
 plt.imshow(np.flip(np.transpose(trace[:,:,0]), axis=0))
 plt.figure(figsize = (10.0, 10.0))
-trace_restored = np.load(ROOT + 'data/fits/trace_' + current_stamp + '.npy')
+trace_restored = np.load(fourth.ROOT + 'data/fits/trace_' + current_stamp + '.npy')
 plt.imshow(np.flip(np.transpose(trace_restored[:,:,0]), axis=0))
 
