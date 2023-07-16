@@ -7,15 +7,15 @@ import matplotlib.pyplot as plt
 import taichi as ti
 import taichi.math as timath
 
-import first
-import second
-import third
-import fourth
-import final
+from first import TypeAliases
+from second import PolyphyEnums
+from third import SimulationConstants, StateFlags
+from fourth import FieldVariables, DerivedVariables, DataLoader
+from final import SimulationVisuals 
 
 ## check if file exists
 if os.path.exists("/tmp/flag") == False:
-    window = ti.ui.Window('PolyPhy', (fourth.vis_field.shape[0], fourth.vis_field.shape[1]), show_window = True)
+    window = ti.ui.Window('PolyPhy', (FieldVariables.vis_field.shape[0], FieldVariables.vis_field.shape[1]), show_window = True)
     window.show()
     canvas = window.get_canvas()
     
@@ -33,61 +33,61 @@ if os.path.exists("/tmp/flag") == False:
             if window.event.key == 'h': hide_UI = not hide_UI
             if window.event.key in [ti.ui.ESCAPE]: do_quit = True
             if window.event.key in [ti.ui.LMB]:
-                final.data_edit_index = final.edit_data(final.data_edit_index)
+                SimulationVisuals.data_edit_index = SimulationVisuals.edit_data(SimulationVisuals.data_edit_index)
         if window.is_pressed(ti.ui.RMB):
-            final.data_edit_index = final.edit_data(final.data_edit_index)
+            SimulationVisuals.data_edit_index = SimulationVisuals.edit_data(SimulationVisuals.data_edit_index)
         
-        if not final.hide_UI:
+        if not SimulationVisuals.hide_UI:
             ## Draw main interactive control GUI
-            window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[0]), 0.74 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[1]))
+            window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / TypeAliases.FLOAT_CPU(DerivedVariables.VIS_RESOLUTION[0]), 0.74 * 1024.0 / TypeAliases.FLOAT_CPU(DerivedVariables.VIS_RESOLUTION[1]))
             window.GUI.text("MCPM parameters:")
-            final.sense_distance = window.GUI.slider_float('Sensing dist', final.sense_distance, 0.1, 0.05 * np.max([fourth.DOMAIN_SIZE[0], fourth.DOMAIN_SIZE[1]]))
-            final.sense_angle = window.GUI.slider_float('Sensing angle', final.sense_angle, 0.01, 0.5 * np.pi)
-            final.sampling_exponent = window.GUI.slider_float('Sampling expo', final.sampling_exponent, 1.0, 10.0)
-            final.step_size = window.GUI.slider_float('Step size', final.step_size, 0.0, 0.005 * np.max([fourth.DOMAIN_SIZE[0], fourth.DOMAIN_SIZE[1]]))
-            final.data_deposit = window.GUI.slider_float('Data deposit', final.data_deposit, 0.0, third.MAX_DEPOSIT)
-            final.agent_deposit = window.GUI.slider_float('Agent deposit', final.agent_deposit, 0.0, 10.0 * third.MAX_DEPOSIT * fourth.DATA_TO_AGENTS_RATIO)
-            final.deposit_attenuation = window.GUI.slider_float('Deposit attn', final.deposit_attenuation, 0.8, 0.999)
-            final.trace_attenuation = window.GUI.slider_float('Trace attn', final.trace_attenuation, 0.8, 0.999)
-            final.deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(final.deposit_vis, 10.0), -3.0, 3.0))
-            final.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(final.trace_vis, 10.0), -3.0, 3.0))
+            SimulationVisuals.sense_distance = window.GUI.slider_float('Sensing dist', SimulationVisuals.sense_distance, 0.1, 0.05 * np.max([DataLoader.DOMAIN_SIZE[0], DataLoader.DOMAIN_SIZE[1]]))
+            SimulationVisuals.sense_angle = window.GUI.slider_float('Sensing angle', SimulationVisuals.sense_angle, 0.01, 0.5 * np.pi)
+            SimulationVisuals.sampling_exponent = window.GUI.slider_float('Sampling expo', SimulationVisuals.sampling_exponent, 1.0, 10.0)
+            SimulationVisuals.step_size = window.GUI.slider_float('Step size', SimulationVisuals.step_size, 0.0, 0.005 * np.max([DataLoader.DOMAIN_SIZE[0], DataLoader.DOMAIN_SIZE[1]]))
+            SimulationVisuals.data_deposit = window.GUI.slider_float('Data deposit', SimulationVisuals.data_deposit, 0.0, SimulationConstants.MAX_DEPOSIT)
+            SimulationVisuals.agent_deposit = window.GUI.slider_float('Agent deposit', SimulationVisuals.agent_deposit, 0.0, 10.0 * SimulationConstants.MAX_DEPOSIT * DerivedVariables.DATA_TO_AGENTS_RATIO)
+            SimulationVisuals.deposit_attenuation = window.GUI.slider_float('Deposit attn', SimulationVisuals.deposit_attenuation, 0.8, 0.999)
+            SimulationVisuals.trace_attenuation = window.GUI.slider_float('Trace attn', SimulationVisuals.trace_attenuation, 0.8, 0.999)
+            SimulationVisuals.deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(SimulationVisuals.deposit_vis, 10.0), -3.0, 3.0))
+            SimulationVisuals.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(SimulationVisuals.trace_vis, 10.0), -3.0, 3.0))
     
             window.GUI.text("Distance distribution:")
-            if window.GUI.checkbox("Constant", third.distance_sampling_distribution == second.EnumDistanceSamplingDistribution.CONSTANT):
-                third.distance_sampling_distribution = second.EnumDistanceSamplingDistribution.CONSTANT
-            if window.GUI.checkbox("Exponential", third.distance_sampling_distribution == second.EnumDistanceSamplingDistribution.EXPONENTIAL):
-                third.distance_sampling_distribution = second.EnumDistanceSamplingDistribution.EXPONENTIAL
-            if window.GUI.checkbox("Maxwell-Boltzmann", third.distance_sampling_distribution == second.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
-                third.distance_sampling_distribution = second.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
+            if window.GUI.checkbox("Constant", StateFlags.distance_sampling_distribution == PolyphyEnums.EnumDistanceSamplingDistribution.CONSTANT):
+                StateFlags.distance_sampling_distribution = PolyphyEnums.EnumDistanceSamplingDistribution.CONSTANT
+            if window.GUI.checkbox("Exponential", StateFlags.distance_sampling_distribution == PolyphyEnums.EnumDistanceSamplingDistribution.EXPONENTIAL):
+                StateFlags.distance_sampling_distribution = PolyphyEnums.EnumDistanceSamplingDistribution.EXPONENTIAL
+            if window.GUI.checkbox("Maxwell-Boltzmann", StateFlags.distance_sampling_distribution == PolyphyEnums.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
+                StateFlags.distance_sampling_distribution = PolyphyEnums.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
     
             window.GUI.text("Directional distribution:")
-            if window.GUI.checkbox("Discrete", third.directional_sampling_distribution == second.EnumDirectionalSamplingDistribution.DISCRETE):
-                third.directional_sampling_distribution = second.EnumDirectionalSamplingDistribution.DISCRETE
-            if window.GUI.checkbox("Cone", third.directional_sampling_distribution == second.EnumDirectionalSamplingDistribution.CONE):
-                third.directional_sampling_distribution = second.EnumDirectionalSamplingDistribution.CONE
+            if window.GUI.checkbox("Discrete", StateFlags.directional_sampling_distribution == PolyphyEnums.EnumDirectionalSamplingDistribution.DISCRETE):
+                StateFlags.directional_sampling_distribution = PolyphyEnums.EnumDirectionalSamplingDistribution.DISCRETE
+            if window.GUI.checkbox("Cone", StateFlags.directional_sampling_distribution == PolyphyEnums.EnumDirectionalSamplingDistribution.CONE):
+                StateFlags.directional_sampling_distribution = PolyphyEnums.EnumDirectionalSamplingDistribution.CONE
     
             window.GUI.text("Directional mutation:")
-            if window.GUI.checkbox("Deterministic", third.directional_mutation_type == second.EnumDirectionalMutationType.DETERMINISTIC):
-                third.directional_mutation_type = second.EnumDirectionalMutationType.DETERMINISTIC
-            if window.GUI.checkbox("Stochastic", third.directional_mutation_type == second.EnumDirectionalMutationType.PROBABILISTIC):
-                third.directional_mutation_type = second.EnumDirectionalMutationType.PROBABILISTIC
+            if window.GUI.checkbox("Deterministic", StateFlags.directional_mutation_type == PolyphyEnums.EnumDirectionalMutationType.DETERMINISTIC):
+                StateFlags.directional_mutation_type = PolyphyEnums.EnumDirectionalMutationType.DETERMINISTIC
+            if window.GUI.checkbox("Stochastic", StateFlags.directional_mutation_type == PolyphyEnums.EnumDirectionalMutationType.PROBABILISTIC):
+                StateFlags.directional_mutation_type = PolyphyEnums.EnumDirectionalMutationType.PROBABILISTIC
     
             window.GUI.text("Deposit fetching:")
-            if window.GUI.checkbox("Nearest neighbor", third.deposit_fetching_strategy == second.EnumDepositFetchingStrategy.NN):
-                third.deposit_fetching_strategy = second.EnumDepositFetchingStrategy.NN
-            if window.GUI.checkbox("Noise-perturbed NN", third.deposit_fetching_strategy == second.EnumDepositFetchingStrategy.NN_PERTURBED):
-                third.deposit_fetching_strategy = second.EnumDepositFetchingStrategy.NN_PERTURBED
+            if window.GUI.checkbox("Nearest neighbor", StateFlags.deposit_fetching_strategy == PolyphyEnums.EnumDepositFetchingStrategy.NN):
+                StateFlags.deposit_fetching_strategy = PolyphyEnums.EnumDepositFetchingStrategy.NN
+            if window.GUI.checkbox("Noise-perturbed NN", StateFlags.deposit_fetching_strategy == PolyphyEnums.EnumDepositFetchingStrategy.NN_PERTURBED):
+                StateFlags.deposit_fetching_strategy = PolyphyEnums.EnumDepositFetchingStrategy.NN_PERTURBED
     
             window.GUI.text("Agent boundary handling:")
-            if window.GUI.checkbox("Wrap around", third.agent_boundary_handling == second.EnumAgentBoundaryHandling.WRAP):
-                third.agent_boundary_handling = second.EnumAgentBoundaryHandling.WRAP
-            if window.GUI.checkbox("Reinitialize center", third.agent_boundary_handling == second.EnumAgentBoundaryHandling.REINIT_CENTER):
-                third.agent_boundary_handling = second.EnumAgentBoundaryHandling.REINIT_CENTER
-            if window.GUI.checkbox("Reinitialize randomly", third.agent_boundary_handling == second.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
-                third.agent_boundary_handling = second.EnumAgentBoundaryHandling.REINIT_RANDOMLY
+            if window.GUI.checkbox("Wrap around", StateFlags.agent_boundary_handling == PolyphyEnums.EnumAgentBoundaryHandling.WRAP):
+                StateFlags.agent_boundary_handling = PolyphyEnums.EnumAgentBoundaryHandling.WRAP
+            if window.GUI.checkbox("Reinitialize center", StateFlags.agent_boundary_handling == PolyphyEnums.EnumAgentBoundaryHandling.REINIT_CENTER):
+                StateFlags.agent_boundary_handling = PolyphyEnums.EnumAgentBoundaryHandling.REINIT_CENTER
+            if window.GUI.checkbox("Reinitialize randomly", StateFlags.agent_boundary_handling == PolyphyEnums.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
+                StateFlags.agent_boundary_handling = PolyphyEnums.EnumAgentBoundaryHandling.REINIT_RANDOMLY
     
             window.GUI.text("Misc controls:")
-            final.do_simulate = window.GUI.checkbox("Run simulation", final.do_simulate)
+            SimulationVisuals.do_simulate = window.GUI.checkbox("Run simulation", SimulationVisuals.do_simulate)
             do_export = do_export | window.GUI.button('Export fit')
             do_screenshot = do_screenshot | window.GUI.button('Screenshot')
             do_quit = do_quit | window.GUI.button('Quit')
@@ -95,7 +95,7 @@ if os.path.exists("/tmp/flag") == False:
     
             ## Help window
             ## Do not exceed prescribed line length of 120 characters, there is no text wrapping in Taichi GUI for now
-            window.GUI.begin('Help', 0.35 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / first.FLOAT_CPU(fourth.VIS_RESOLUTION[1]))
+            window.GUI.begin('Help', 0.35 * 1024.0 / TypeAliases.FLOAT_CPU(DerivedVariables.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / TypeAliases.FLOAT_CPU(DerivedVariables.VIS_RESOLUTION[1]))
             window.GUI.text("Welcome to PolyPhy 2D GUI variant written by researchers at UCSC/OSPO with the help of numerous external contributors\n(https://github.com/PolyPhyHub). PolyPhy implements MCPM, an agent-based, stochastic, pattern forming algorithm designed\nby Elek et al, inspired by Physarum polycephalum slime mold. Below is a quick reference guide explaining the parameters\nand features available in the interface. The reference as well as other panels can be hidden using the arrow button, moved,\nand rescaled.")
             window.GUI.text("")
             window.GUI.text("PARAMETERS")
@@ -133,59 +133,59 @@ if os.path.exists("/tmp/flag") == False:
             window.GUI.end()
     
         ## Main simulation sequence
-        if final.do_simulate:
-            final.k.data_step(final.data_deposit, final.current_deposit_index)
-            final.k.agent_step(\
-                final.sense_distance,\
-                final.sense_angle,\
-                third.STEERING_RATE,\
-                final.sampling_exponent,\
-                final.step_size,\
-                final.agent_deposit,\
-                final.current_deposit_index,\
-                third.distance_sampling_distribution,\
-                third.directional_sampling_distribution,\
-                third.directional_mutation_type,\
-                third.deposit_fetching_strategy,\
-                third.agent_boundary_handling)
-            final.k.deposit_relaxation_step(final.deposit_attenuation, final.current_deposit_index)
-            final.k.trace_relaxation_step(final.trace_attenuation)
-            final.current_deposit_index = 1 - final.current_deposit_index
+        if SimulationVisuals.do_simulate:
+            SimulationVisuals.k.data_step(SimulationVisuals.data_deposit, SimulationVisuals.current_deposit_index)
+            SimulationVisuals.k.agent_step(\
+                SimulationVisuals.sense_distance,\
+                SimulationVisuals.sense_angle,\
+                SimulationConstants.STEERING_RATE,\
+                SimulationVisuals.sampling_exponent,\
+                SimulationVisuals.step_size,\
+                SimulationVisuals.agent_deposit,\
+                SimulationVisuals.current_deposit_index,\
+                StateFlags.distance_sampling_distribution,\
+                StateFlags.directional_sampling_distribution,\
+                StateFlags.directional_mutation_type,\
+                StateFlags.deposit_fetching_strategy,\
+                StateFlags.agent_boundary_handling)
+            SimulationVisuals.k.deposit_relaxation_step(SimulationVisuals.deposit_attenuation, SimulationVisuals.current_deposit_index)
+            SimulationVisuals.k.trace_relaxation_step(SimulationVisuals.trace_attenuation)
+            SimulationVisuals.current_deposit_index = 1 - SimulationVisuals.current_deposit_index
     
         ## Render visualization
-        final.k.render_visualization(final.deposit_vis, final.trace_vis, final.current_deposit_index)
-        canvas.set_image(fourth.vis_field)
+        SimulationVisuals.k.render_visualization(SimulationVisuals.deposit_vis, SimulationVisuals.trace_vis, SimulationVisuals.current_deposit_index)
+        canvas.set_image(FieldVariables.vis_field)
     
         if do_screenshot:
-            window.write_image(fourth.ROOT + 'capture/screenshot_' + final.stamp() + '.png') ## Must appear before window.show() call
+            window.write_image(DataLoader.ROOT + 'capture/screenshot_' + SimulationVisuals.stamp() + '.png') ## Must appear before window.show() call
         window.show()
         if do_export:
-            final.store_fit()
+            SimulationVisuals.store_fit()
         if do_quit:
             break
         
     window.destroy()
 
 ## Store fits
-current_stamp = final.stamp()
-deposit = fourth.deposit_field.to_numpy()
-np.save(fourth.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
-trace = fourth.trace_field.to_numpy()
-np.save(fourth.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
+current_stamp = SimulationVisuals.stamp()
+deposit = FieldVariables.deposit_field.to_numpy()
+np.save(DataLoader.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
+trace = FieldVariables.trace_field.to_numpy()
+np.save(DataLoader.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
 
 ## Plot results
 ## Compare with stored fields
-current_stamp, deposit, trace = final.store_fit()
+current_stamp, deposit, trace = SimulationVisuals.store_fit()
 
 plt.figure(figsize = (10.0, 10.0))
 plt.imshow(np.flip(np.transpose(deposit[:,:,0]), axis=0))
 plt.figure(figsize = (10.0, 10.0))
-deposit_restored = np.load(fourth.ROOT + 'data/fits/deposit_' + current_stamp + '.npy')
+deposit_restored = np.load(DataLoader.ROOT + 'data/fits/deposit_' + current_stamp + '.npy')
 plt.imshow(np.flip(np.transpose(deposit_restored[:,:,0]), axis=0))
 
 plt.figure(figsize = (10.0, 10.0))
 plt.imshow(np.flip(np.transpose(trace[:,:,0]), axis=0))
 plt.figure(figsize = (10.0, 10.0))
-trace_restored = np.load(fourth.ROOT + 'data/fits/trace_' + current_stamp + '.npy')
+trace_restored = np.load(DataLoader.ROOT + 'data/fits/trace_' + current_stamp + '.npy')
 plt.imshow(np.flip(np.transpose(trace_restored[:,:,0]), axis=0))
 
