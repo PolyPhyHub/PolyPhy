@@ -33,9 +33,9 @@ if os.path.exists("/tmp/flag") == False:
             if window.event.key == 'h': hide_UI = not hide_UI
             if window.event.key in [ti.ui.ESCAPE]: do_quit = True
             if window.event.key in [ti.ui.LMB]:
-                SimulationVisuals.data_edit_index = SimulationVisuals.edit_data(SimulationVisuals.data_edit_index)
+                SimulationVisuals.data_edit_index = SimulationVisuals.edit_data(SimulationVisuals.data_edit_index,window)
         if window.is_pressed(ti.ui.RMB):
-            SimulationVisuals.data_edit_index = SimulationVisuals.edit_data(SimulationVisuals.data_edit_index)
+            SimulationVisuals.data_edit_index = SimulationVisuals.edit_data(SimulationVisuals.data_edit_index,window)
         
         if not SimulationVisuals.hide_UI:
             ## Draw main interactive control GUI

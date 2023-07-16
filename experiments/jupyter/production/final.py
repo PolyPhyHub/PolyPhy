@@ -8,6 +8,7 @@ import numpy as np
 from fourth import DataLoader, FieldVariables, Agents, DerivedVariables
 from third import SimulationConstants
 from first import TypeAliases 
+import taichi as ti
 
 class SimulationVisuals:
 
@@ -39,12 +40,12 @@ class SimulationVisuals:
 
     ## Insert a new data point, Round-Robin style, and upload to GPU
     ## This can be very costly for many data points! (eg 10^5 or more)
-    def edit_data(edit_index: TypeAliases.INT_CPU) -> TypeAliases.INT_CPU:
+    def edit_data(edit_index: TypeAliases.INT_CPU, window: ti.ui.Window) -> TypeAliases.INT_CPU:
         mouse_rel_pos = window.get_cursor_pos()
         mouse_rel_pos = (np.min([np.max([0.001, window.get_cursor_pos()[0]]), 0.999]), np.min([np.max([0.001, window.get_cursor_pos()[1]]), 0.999]))
         mouse_pos = np.add(DataLoader.DOMAIN_MIN, np.multiply(mouse_rel_pos, DataLoader.DOMAIN_SIZE))
-        data[edit_index, :] = mouse_pos[0], mouse_pos[1], AVG_WEIGHT
-        data_field.from_numpy(data)
+        DataLoader.data[edit_index, :] = mouse_pos[0], mouse_pos[1], DataLoader.AVG_WEIGHT
+        FieldVariables.data_field.from_numpy(DataLoader.data)
         edit_index = (edit_index + 1) % DataLoader.N_DATA
         return edit_index
 
