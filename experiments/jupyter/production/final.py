@@ -12,31 +12,13 @@ import taichi as ti
 
 class SimulationVisuals:
 
-    k = finalKernels.FinalKernels()
-
-    ## Initialize GPU fields
-    FieldVariables.data_field.from_numpy(DataLoader.data)
-    FieldVariables.agents_field.from_numpy(Agents.agents)
-    k.zero_field(FieldVariables.deposit_field)
-    k.zero_field(FieldVariables.trace_field)
-    k.zero_field(FieldVariables.vis_field)
-
-    ## Main simulation & vis loop
-    sense_distance = 0.005 * DerivedVariables.DOMAIN_SIZE_MAX
-    sense_angle = 1.5
-    step_size = 0.0005 * DerivedVariables.DOMAIN_SIZE_MAX
-    sampling_exponent = 2.0
-    deposit_attenuation = 0.9
-    trace_attenuation = 0.96
-    data_deposit = 0.1 * SimulationConstants.MAX_DEPOSIT
-    agent_deposit = data_deposit * DerivedVariables.DATA_TO_AGENTS_RATIO
-    deposit_vis = 0.1
-    trace_vis = 1.0
-
-    current_deposit_index = 0
-    data_edit_index = 0
-    do_simulate = True
-    hide_UI = False
+    def initGPU(k):
+        ## Initialize GPU fields
+        FieldVariables.data_field.from_numpy(DataLoader.data)
+        FieldVariables.agents_field.from_numpy(Agents.agents)
+        k.zero_field(FieldVariables.deposit_field)
+        k.zero_field(FieldVariables.trace_field)
+        k.zero_field(FieldVariables.vis_field)
 
     ## Insert a new data point, Round-Robin style, and upload to GPU
     ## This can be very costly for many data points! (eg 10^5 or more)
@@ -63,3 +45,23 @@ class SimulationVisuals:
         trace = FieldVariables.trace_field.to_numpy()
         np.save(DataLoader.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
         return current_stamp, deposit, trace
+
+    k = finalKernels.FinalKernels() 
+    initGPU(k)
+
+    ## Main simulation & vis loop
+    sense_distance = 0.005 * DerivedVariables.DOMAIN_SIZE_MAX
+    sense_angle = 1.5
+    step_size = 0.0005 * DerivedVariables.DOMAIN_SIZE_MAX
+    sampling_exponent = 2.0
+    deposit_attenuation = 0.9
+    trace_attenuation = 0.96
+    data_deposit = 0.1 * SimulationConstants.MAX_DEPOSIT
+    agent_deposit = data_deposit * DerivedVariables.DATA_TO_AGENTS_RATIO
+    deposit_vis = 0.1
+    trace_vis = 1.0
+
+    current_deposit_index = 0
+    data_edit_index = 0
+    do_simulate = True
+    hide_UI = False
