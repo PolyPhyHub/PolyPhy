@@ -46,8 +46,8 @@ class SimulationVisuals:
         np.save(DataLoader.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
         return current_stamp, deposit, trace
 
-    k = finalKernels.FinalKernels() 
-    initGPU(k)
+    def __init__(self,k):
+        SimulationVisuals.initGPU(k)
 
     ## Main simulation & vis loop
     sense_distance = 0.005 * DerivedVariables.DOMAIN_SIZE_MAX
