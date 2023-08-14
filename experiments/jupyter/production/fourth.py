@@ -50,43 +50,46 @@ class DataLoader:
 
 class DerivedVariables:
     ## Derived constants
-    DATA_TO_AGENTS_RATIO = TypeAliases.FLOAT_CPU(DataLoader.N_DATA) / TypeAliases.FLOAT_CPU(DataLoader.N_AGENTS)
-    DOMAIN_SIZE_MAX = np.max([DataLoader.DOMAIN_SIZE[0], DataLoader.DOMAIN_SIZE[1]])
-    TRACE_RESOLUTION = TypeAliases.INT_CPU((TypeAliases.FLOAT_CPU(SimulationConstants.TRACE_RESOLUTION_MAX) * DataLoader.DOMAIN_SIZE[0] / DOMAIN_SIZE_MAX, TypeAliases.FLOAT_CPU(SimulationConstants.TRACE_RESOLUTION_MAX) * DataLoader.DOMAIN_SIZE[1] / DOMAIN_SIZE_MAX))
-    DEPOSIT_RESOLUTION = (TRACE_RESOLUTION[0] // SimulationConstants.DEPOSIT_DOWNSCALING_FACTOR, TRACE_RESOLUTION[1] // SimulationConstants.DEPOSIT_DOWNSCALING_FACTOR)
-    VIS_RESOLUTION = TRACE_RESOLUTION
+    def __init__(self,dataLoader=DataLoader()):
+        self.DATA_TO_AGENTS_RATIO = TypeAliases.FLOAT_CPU(dataLoader.N_DATA) / TypeAliases.FLOAT_CPU(dataLoader.N_AGENTS)
+        self.DOMAIN_SIZE_MAX = np.max([dataLoader.DOMAIN_SIZE[0], dataLoader.DOMAIN_SIZE[1]])
+        self.TRACE_RESOLUTION = TypeAliases.INT_CPU((TypeAliases.FLOAT_CPU(SimulationConstants.TRACE_RESOLUTION_MAX) * dataLoader.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX, TypeAliases.FLOAT_CPU(SimulationConstants.TRACE_RESOLUTION_MAX) * dataLoader.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX))
+        self.DEPOSIT_RESOLUTION = (self.TRACE_RESOLUTION[0] // SimulationConstants.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[1] // SimulationConstants.DEPOSIT_DOWNSCALING_FACTOR)
+        self.VIS_RESOLUTION = self.TRACE_RESOLUTION
 
 class Agents:
     ## Init agents
-    agents = np.zeros(shape=(DataLoader.N_AGENTS, 4), dtype = TypeAliases.FLOAT_CPU)
-    agents[:, 0] = rng.uniform(low = DataLoader.DOMAIN_MIN[0] + 0.001, high = DataLoader.DOMAIN_MAX[0] - 0.001, size = DataLoader.N_AGENTS)
-    agents[:, 1] = rng.uniform(low = DataLoader.DOMAIN_MIN[1] + 0.001, high = DataLoader.DOMAIN_MAX[1] - 0.001, size = DataLoader.N_AGENTS)
-    agents[:, 2] = rng.uniform(low = 0.0, high = 2.0 * np.pi, size = DataLoader.N_AGENTS)
-    agents[:, 3] = 1.0
+    def __init__(self,dataLoader=DataLoader(),derivedVariables=DerivedVariables()):
+        self.agents = np.zeros(shape=(dataLoader.N_AGENTS, 4), dtype = TypeAliases.FLOAT_CPU)
+        self.agents[:, 0] = rng.uniform(low = dataLoader.DOMAIN_MIN[0] + 0.001, high = dataLoader.DOMAIN_MAX[0] - 0.001, size = dataLoader.N_AGENTS)
+        self.agents[:, 1] = rng.uniform(low = dataLoader.DOMAIN_MIN[1] + 0.001, high = dataLoader.DOMAIN_MAX[1] - 0.001, size = dataLoader.N_AGENTS)
+        self.agents[:, 2] = rng.uniform(low = 0.0, high = 2.0 * np.pi, size = dataLoader.N_AGENTS)
+        self.agents[:, 3] = 1.0
 
-    print('Simulation domain min:', DataLoader.DOMAIN_MIN)
-    print('Simulation domain max:', DataLoader.DOMAIN_MAX)
-    print('Simulation domain size:', DataLoader.DOMAIN_SIZE)
-    print('Trace grid resolution:', DerivedVariables.TRACE_RESOLUTION)
-    print('Deposit grid resolution:', DerivedVariables.DEPOSIT_RESOLUTION)
-    print('Data sample:', DataLoader.data[0, :])
-    print('Agent sample:', agents[0, :])
-    print('Number of agents:', DataLoader.N_AGENTS)
-    print('Number of data points:', DataLoader.N_DATA)
+        print('Simulation domain min:', dataLoader.DOMAIN_MIN)
+        print('Simulation domain max:', dataLoader.DOMAIN_MAX)
+        print('Simulation domain size:', dataLoader.DOMAIN_SIZE)
+        print('Trace grid resolution:', derivedVariables.TRACE_RESOLUTION)
+        print('Deposit grid resolution:', derivedVariables.DEPOSIT_RESOLUTION)
+        print('Data sample:', dataLoader.data[0, :])
+        print('Agent sample:', self.agents[0, :])
+        print('Number of agents:', dataLoader.N_AGENTS)
+        print('Number of data points:', dataLoader.N_DATA)
 
 class FieldVariables:
     ## Allocate GPU memory fields
     ## Keep in mind that the dimensions of these fields are important in the subsequent computations;
     ## that means if they change the GPU kernels and the associated handling code must be modified as well
-    data_field = ti.Vector.field(n = 3, dtype = TypeAliases.FLOAT_GPU, shape = DataLoader.N_DATA)
-    agents_field = ti.Vector.field(n = 4, dtype = TypeAliases.FLOAT_GPU, shape = DataLoader.N_AGENTS)
-    deposit_field = ti.Vector.field(n = 2, dtype = TypeAliases.FLOAT_GPU, shape = DerivedVariables.DEPOSIT_RESOLUTION)
-    trace_field = ti.Vector.field(n = 1, dtype = TypeAliases.FLOAT_GPU, shape = DerivedVariables.TRACE_RESOLUTION)
-    vis_field = ti.Vector.field(n = 3, dtype = TypeAliases.FLOAT_GPU, shape = DerivedVariables.VIS_RESOLUTION)
-    print('Total GPU memory allocated:', TypeAliases .INT_CPU(4 * (\
-        data_field.shape[0] * 3 + \
-        agents_field.shape[0] * 4 + \
-        deposit_field.shape[0] * deposit_field.shape[1] * 2 + \
-        trace_field.shape[0] * trace_field.shape[1] * 1 + \
-        vis_field.shape[0] * vis_field.shape[1] * 3 \
-        ) / 2 ** 20), 'MB')
+    def __init__(self,dataLoader=DataLoader(),derivedVariables=DerivedVariables()):
+        self.data_field = ti.Vector.field(n = 3, dtype = TypeAliases.FLOAT_GPU, shape = dataLoader.N_DATA)
+        self.agents_field = ti.Vector.field(n = 4, dtype = TypeAliases.FLOAT_GPU, shape = dataLoader.N_AGENTS)
+        self.deposit_field = ti.Vector.field(n = 2, dtype = TypeAliases.FLOAT_GPU, shape = derivedVariables.DEPOSIT_RESOLUTION)
+        self.trace_field = ti.Vector.field(n = 1, dtype = TypeAliases.FLOAT_GPU, shape = derivedVariables.TRACE_RESOLUTION)
+        self.vis_field = ti.Vector.field(n = 3, dtype = TypeAliases.FLOAT_GPU, shape = derivedVariables.VIS_RESOLUTION)
+        print('Total GPU memory allocated:', TypeAliases .INT_CPU(4 * (\
+            self.data_field.shape[0] * 3 + \
+            self.agents_field.shape[0] * 4 + \
+            self.deposit_field.shape[0] * self.deposit_field.shape[1] * 2 + \
+            self.trace_field.shape[0] * self.trace_field.shape[1] * 1 + \
+            self.vis_field.shape[0] * self.vis_field.shape[1] * 3 \
+            ) / 2 ** 20), 'MB')

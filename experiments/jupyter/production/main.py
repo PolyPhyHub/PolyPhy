@@ -10,15 +10,12 @@ import taichi.math as timath
 from first import TypeAliases
 from second import PolyphyEnums
 from third import SimulationConstants, StateFlags
-from fourth import FieldVariables, DerivedVariables, DataLoader
-from final import SimulationVisuals 
-from finalKernels import FinalKernels
 
 class PolyPhyWindow:
-    def __init__(self, k):
+    def __init__(self, k, simulationVisuals):
         ## check if file exists
         if os.path.exists("/tmp/flag") == False:
-            window = ti.ui.Window('PolyPhy', (FieldVariables.vis_field.shape[0], FieldVariables.vis_field.shape[1]), show_window = True)
+            window = ti.ui.Window('PolyPhy', (simulationVisuals.fieldVariables.vis_field.shape[0], simulationVisuals.fieldVariables.vis_field.shape[1]), show_window = True)
             window.show()
             canvas = window.get_canvas()
             
@@ -36,24 +33,24 @@ class PolyPhyWindow:
                     if window.event.key == 'h': hide_UI = not hide_UI
                     if window.event.key in [ti.ui.ESCAPE]: do_quit = True
                     if window.event.key in [ti.ui.LMB]:
-                        SimulationVisuals.data_edit_index = SimulationVisuals.edit_data(SimulationVisuals.data_edit_index,window)
+                        simulationVisuals.data_edit_index = simulationVisuals.edit_data(simulationVisuals.data_edit_index,window)
                 if window.is_pressed(ti.ui.RMB):
-                    SimulationVisuals.data_edit_index = SimulationVisuals.edit_data(SimulationVisuals.data_edit_index,window)
+                    simulationVisuals.data_edit_index = simulationVisuals.edit_data(simulationVisuals.data_edit_index,window)
                 
-                if not SimulationVisuals.hide_UI:
+                if not simulationVisuals.hide_UI:
                     ## Draw main interactive control GUI
-                    window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / TypeAliases.FLOAT_CPU(DerivedVariables.VIS_RESOLUTION[0]), 0.74 * 1024.0 / TypeAliases.FLOAT_CPU(DerivedVariables.VIS_RESOLUTION[1]))
+                    window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.derivedVariables.VIS_RESOLUTION[0]), 0.74 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.derivedVariables.VIS_RESOLUTION[1]))
                     window.GUI.text("MCPM parameters:")
-                    SimulationVisuals.sense_distance = window.GUI.slider_float('Sensing dist', SimulationVisuals.sense_distance, 0.1, 0.05 * np.max([DataLoader.DOMAIN_SIZE[0], DataLoader.DOMAIN_SIZE[1]]))
-                    SimulationVisuals.sense_angle = window.GUI.slider_float('Sensing angle', SimulationVisuals.sense_angle, 0.01, 0.5 * np.pi)
-                    SimulationVisuals.sampling_exponent = window.GUI.slider_float('Sampling expo', SimulationVisuals.sampling_exponent, 1.0, 10.0)
-                    SimulationVisuals.step_size = window.GUI.slider_float('Step size', SimulationVisuals.step_size, 0.0, 0.005 * np.max([DataLoader.DOMAIN_SIZE[0], DataLoader.DOMAIN_SIZE[1]]))
-                    SimulationVisuals.data_deposit = window.GUI.slider_float('Data deposit', SimulationVisuals.data_deposit, 0.0, SimulationConstants.MAX_DEPOSIT)
-                    SimulationVisuals.agent_deposit = window.GUI.slider_float('Agent deposit', SimulationVisuals.agent_deposit, 0.0, 10.0 * SimulationConstants.MAX_DEPOSIT * DerivedVariables.DATA_TO_AGENTS_RATIO)
-                    SimulationVisuals.deposit_attenuation = window.GUI.slider_float('Deposit attn', SimulationVisuals.deposit_attenuation, 0.8, 0.999)
-                    SimulationVisuals.trace_attenuation = window.GUI.slider_float('Trace attn', SimulationVisuals.trace_attenuation, 0.8, 0.999)
-                    SimulationVisuals.deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(SimulationVisuals.deposit_vis, 10.0), -3.0, 3.0))
-                    SimulationVisuals.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(SimulationVisuals.trace_vis, 10.0), -3.0, 3.0))
+                    simulationVisuals.sense_distance = window.GUI.slider_float('Sensing dist', simulationVisuals.sense_distance, 0.1, 0.05 * np.max([simulationVisuals.dataLoaders.DOMAIN_SIZE[0], simulationVisuals.dataLoaders.DOMAIN_SIZE[1]]))
+                    simulationVisuals.sense_angle = window.GUI.slider_float('Sensing angle', simulationVisuals.sense_angle, 0.01, 0.5 * np.pi)
+                    simulationVisuals.sampling_exponent = window.GUI.slider_float('Sampling expo', simulationVisuals.sampling_exponent, 1.0, 10.0)
+                    simulationVisuals.step_size = window.GUI.slider_float('Step size', simulationVisuals.step_size, 0.0, 0.005 * np.max([simulationVisuals.dataLoaders.DOMAIN_SIZE[0], simulationVisuals.dataLoaders.DOMAIN_SIZE[1]]))
+                    simulationVisuals.data_deposit = window.GUI.slider_float('Data deposit', simulationVisuals.data_deposit, 0.0, SimulationConstants.MAX_DEPOSIT)
+                    simulationVisuals.agent_deposit = window.GUI.slider_float('Agent deposit', simulationVisuals.agent_deposit, 0.0, 10.0 * SimulationConstants.MAX_DEPOSIT * simulationVisuals.derivedVariables.DATA_TO_AGENTS_RATIO)
+                    simulationVisuals.deposit_attenuation = window.GUI.slider_float('Deposit attn', simulationVisuals.deposit_attenuation, 0.8, 0.999)
+                    simulationVisuals.trace_attenuation = window.GUI.slider_float('Trace attn', simulationVisuals.trace_attenuation, 0.8, 0.999)
+                    simulationVisuals.deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(simulationVisuals.deposit_vis, 10.0), -3.0, 3.0))
+                    simulationVisuals.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(simulationVisuals.trace_vis, 10.0), -3.0, 3.0))
             
                     window.GUI.text("Distance distribution:")
                     if window.GUI.checkbox("Constant", StateFlags.distance_sampling_distribution == PolyphyEnums.EnumDistanceSamplingDistribution.CONSTANT):
@@ -90,7 +87,7 @@ class PolyPhyWindow:
                         StateFlags.agent_boundary_handling = PolyphyEnums.EnumAgentBoundaryHandling.REINIT_RANDOMLY
             
                     window.GUI.text("Misc controls:")
-                    SimulationVisuals.do_simulate = window.GUI.checkbox("Run simulation", SimulationVisuals.do_simulate)
+                    simulationVisuals.do_simulate = window.GUI.checkbox("Run simulation", simulationVisuals.do_simulate)
                     do_export = do_export | window.GUI.button('Export fit')
                     do_screenshot = do_screenshot | window.GUI.button('Screenshot')
                     do_quit = do_quit | window.GUI.button('Quit')
@@ -98,7 +95,7 @@ class PolyPhyWindow:
             
                     ## Help window
                     ## Do not exceed prescribed line length of 120 characters, there is no text wrapping in Taichi GUI for now
-                    window.GUI.begin('Help', 0.35 * 1024.0 / TypeAliases.FLOAT_CPU(DerivedVariables.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / TypeAliases.FLOAT_CPU(DerivedVariables.VIS_RESOLUTION[1]))
+                    window.GUI.begin('Help', 0.35 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.derivedVariables.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.derivedVariables.VIS_RESOLUTION[1]))
                     window.GUI.text("Welcome to PolyPhy 2D GUI variant written by researchers at UCSC/OSPO with the help of numerous external contributors\n(https://github.com/PolyPhyHub). PolyPhy implements MCPM, an agent-based, stochastic, pattern forming algorithm designed\nby Elek et al, inspired by Physarum polycephalum slime mold. Below is a quick reference guide explaining the parameters\nand features available in the interface. The reference as well as other panels can be hidden using the arrow button, moved,\nand rescaled.")
                     window.GUI.text("")
                     window.GUI.text("PARAMETERS")
@@ -136,60 +133,61 @@ class PolyPhyWindow:
                     window.GUI.end()
             
                 ## Main simulation sequence
-                if SimulationVisuals.do_simulate:
-                    k.data_step(SimulationVisuals.data_deposit, SimulationVisuals.current_deposit_index)
+                if simulationVisuals.do_simulate:
+                    k.data_step(simulationVisuals.data_deposit, simulationVisuals.current_deposit_index)
                     k.agent_step(\
-                        SimulationVisuals.sense_distance,\
-                        SimulationVisuals.sense_angle,\
+                        simulationVisuals.sense_distance,\
+                        simulationVisuals.sense_angle,\
                         SimulationConstants.STEERING_RATE,\
-                        SimulationVisuals.sampling_exponent,\
-                        SimulationVisuals.step_size,\
-                        SimulationVisuals.agent_deposit,\
-                        SimulationVisuals.current_deposit_index,\
+                        simulationVisuals.sampling_exponent,\
+                        simulationVisuals.step_size,\
+                        simulationVisuals.agent_deposit,\
+                        simulationVisuals.current_deposit_index,\
                         StateFlags.distance_sampling_distribution,\
                         StateFlags.directional_sampling_distribution,\
                         StateFlags.directional_mutation_type,\
                         StateFlags.deposit_fetching_strategy,\
                         StateFlags.agent_boundary_handling)
-                    k.deposit_relaxation_step(SimulationVisuals.deposit_attenuation, SimulationVisuals.current_deposit_index)
-                    k.trace_relaxation_step(SimulationVisuals.trace_attenuation)
-                    SimulationVisuals.current_deposit_index = 1 - SimulationVisuals.current_deposit_index
+                    k.deposit_relaxation_step(simulationVisuals.deposit_attenuation, simulationVisuals.current_deposit_index)
+                    k.trace_relaxation_step(simulationVisuals.trace_attenuation)
+                    simulationVisuals.current_deposit_index = 1 - simulationVisuals.current_deposit_index
             
                 ## Render visualization
-                k.render_visualization(SimulationVisuals.deposit_vis, SimulationVisuals.trace_vis, SimulationVisuals.current_deposit_index)
-                canvas.set_image(FieldVariables.vis_field)
+                k.render_visualization(simulationVisuals.deposit_vis, simulationVisuals.trace_vis, simulationVisuals.current_deposit_index)
+                canvas.set_image(simulationVisuals.fieldVariables.vis_field)
             
                 if do_screenshot:
-                    window.write_image(DataLoader.ROOT + 'capture/screenshot_' + SimulationVisuals.stamp() + '.png') ## Must appear before window.show() call
+                    window.write_image(simulationVisuals.dataLoaders.ROOT + 'capture/screenshot_' + simulationVisuals.stamp() + '.png') ## Must appear before window.show() call
                 window.show()
                 if do_export:
-                    SimulationVisuals.store_fit()
+                    simulationVisuals.store_fit()
                 if do_quit:
                     break
                 
             window.destroy()
 
 class PostSimulation:
-    ## Store fits
-    current_stamp = SimulationVisuals.stamp()
-    deposit = FieldVariables.deposit_field.to_numpy()
-    np.save(DataLoader.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
-    trace = FieldVariables.trace_field.to_numpy()
-    np.save(DataLoader.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
+    def __init__(self, simulationVisuals):
+        ## Store fits
+        current_stamp = simulationVisuals.stamp()
+        deposit = simulationVisuals.fieldVariables.deposit_field.to_numpy()
+        np.save(simulationVisuals.dataLoaders.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
+        trace = simulationVisuals.fieldVariables.trace_field.to_numpy()
+        np.save(simulationVisuals.dataLoaders.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
 
-    ## Plot results
-    ## Compare with stored fields
-    current_stamp, deposit, trace = SimulationVisuals.store_fit()
+        ## Plot results
+        ## Compare with stored fields
+        current_stamp, deposit, trace = simulationVisuals.store_fit()
 
-    plt.figure(figsize = (10.0, 10.0))
-    plt.imshow(np.flip(np.transpose(deposit[:,:,0]), axis=0))
-    plt.figure(figsize = (10.0, 10.0))
-    deposit_restored = np.load(DataLoader.ROOT + 'data/fits/deposit_' + current_stamp + '.npy')
-    plt.imshow(np.flip(np.transpose(deposit_restored[:,:,0]), axis=0))
+        plt.figure(figsize = (10.0, 10.0))
+        plt.imshow(np.flip(np.transpose(deposit[:,:,0]), axis=0))
+        plt.figure(figsize = (10.0, 10.0))
+        deposit_restored = np.load(simulationVisuals.dataLoaders.ROOT + 'data/fits/deposit_' + current_stamp + '.npy')
+        plt.imshow(np.flip(np.transpose(deposit_restored[:,:,0]), axis=0))
 
-    plt.figure(figsize = (10.0, 10.0))
-    plt.imshow(np.flip(np.transpose(trace[:,:,0]), axis=0))
-    plt.figure(figsize = (10.0, 10.0))
-    trace_restored = np.load(DataLoader.ROOT + 'data/fits/trace_' + current_stamp + '.npy')
-    plt.imshow(np.flip(np.transpose(trace_restored[:,:,0]), axis=0))
+        plt.figure(figsize = (10.0, 10.0))
+        plt.imshow(np.flip(np.transpose(trace[:,:,0]), axis=0))
+        plt.figure(figsize = (10.0, 10.0))
+        trace_restored = np.load(simulationVisuals.dataLoaders.ROOT + 'data/fits/trace_' + current_stamp + '.npy')
+        plt.imshow(np.flip(np.transpose(trace_restored[:,:,0]), axis=0))
 

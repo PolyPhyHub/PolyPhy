@@ -1,3 +1,3 @@
 from polyphy import PolyPhy
 
-PolyPhy()
+PolyPhy().start_simulation()
