@@ -1,5 +1,5 @@
 from polyphy import PolyPhy
-from fourth import FieldVariables
+from polyphy_functions import FieldVariables
 
 class FinalFieldVariables(FieldVariables):
     def __init__(self, dataLoaders, derivedVariables):

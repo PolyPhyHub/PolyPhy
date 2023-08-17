@@ -1,6 +1,6 @@
 import kernels
 import taichi as ti
-from first import TypeAliases
+from polyphy_functions import TypeAliases
 
 @ti.data_oriented
 class FinalKernels(kernels.Kernels):

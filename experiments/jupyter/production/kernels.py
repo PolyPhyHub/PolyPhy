@@ -1,8 +1,6 @@
 import taichi as ti
 import taichi.math as timath
-from first import TypeAliases
-from second import PolyphyEnums
-from third import SimulationConstants, StateFlags
+from polyphy_functions import TypeAliases, PolyphyEnums, SimulationConstants, StateFlags
 
 @ti.data_oriented
 class Kernels:
