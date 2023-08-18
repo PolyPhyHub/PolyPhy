@@ -19,8 +19,9 @@ class TypeAliases:
     VEC2f = ti.types.vector(2, FLOAT_GPU)
     VEC3f = ti.types.vector(3, FLOAT_GPU)
 
+    #  TODO: Impletement float 16 and 64
     @staticmethod
-    def change_precision(float_precision, int_precision):
+    def set_precision(float_precision):
         if float_precision == "float64":
             TypeAliases.FLOAT_CPU = np.float64
             TypeAliases.FLOAT_GPU = ti.f64
@@ -32,21 +33,27 @@ class TypeAliases:
             TypeAliases.FLOAT_GPU = ti.f16
         else:
             raise ValueError("Invalid float precision value. Supported values: float64, float32, float16")
+  
 
-        if int_precision == "int64":
-            TypeAliases.INT_CPU = np.int64
-            TypeAliases.INT_GPU = ti.i64
-        elif int_precision == "int32":
-            TypeAliases.INT_CPU = np.int32
-            TypeAliases.INT_GPU = ti.i32
-        elif int_precision == "int16":
-            TypeAliases.INT_CPU = np.int16
-            TypeAliases.INT_GPU = ti.i16
+class SimulationConstants:
+    ## Simulation-wide constants
+    N_DATA_DEFAULT = 1000
+    N_AGENTS_DEFAULT = 1000000
+    DOMAIN_SIZE_DEFAULT = (100.0, 100.0)
+    TRACE_RESOLUTION_MAX = 1400
+    DEPOSIT_DOWNSCALING_FACTOR = 1
+    STEERING_RATE = 0.5
+    MAX_DEPOSIT = 10.0
+    DOMAIN_MARGIN = 0.05
+
+    @staticmethod
+    def set_value(constant_name, new_value):
+        if hasattr(SimulationConstants, constant_name):
+            setattr(SimulationConstants, constant_name, new_value)
         else:
-            raise ValueError("Invalid int precision value. Supported values: int64, int32, int16")
+            raise AttributeError(f"'SimulationConstants' has no attribute '{constant_name}'")
 
-
-class PolyphyEnums:
+class StateFlags:
     ## Distance sampling distribution for agents
     class EnumDistanceSamplingDistribution(IntEnum):
         CONSTANT = 0
@@ -73,32 +80,13 @@ class PolyphyEnums:
         WRAP = 0
         REINIT_CENTER = 1
         REINIT_RANDOMLY = 2
-
-class SimulationConstants:
-    ## Simulation-wide constants
-    N_DATA_DEFAULT = 1000
-    N_AGENTS_DEFAULT = 1000000
-    DOMAIN_SIZE_DEFAULT = (100.0, 100.0)
-    TRACE_RESOLUTION_MAX = 1400
-    DEPOSIT_DOWNSCALING_FACTOR = 1
-    STEERING_RATE = 0.5
-    MAX_DEPOSIT = 10.0
-    DOMAIN_MARGIN = 0.05
-
-    @staticmethod
-    def set_constant(constant_name, new_value):
-        if hasattr(SimulationConstants, constant_name):
-            setattr(SimulationConstants, constant_name, new_value)
-        else:
-            raise AttributeError(f"'SimulationConstants' has no attribute '{constant_name}'")
-
-class StateFlags:
+    
     ## State flags
-    distance_sampling_distribution = PolyphyEnums.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
-    directional_sampling_distribution = PolyphyEnums.EnumDirectionalSamplingDistribution.CONE
-    directional_mutation_type = PolyphyEnums.EnumDirectionalMutationType.PROBABILISTIC
-    deposit_fetching_strategy = PolyphyEnums.EnumDepositFetchingStrategy.NN_PERTURBED
-    agent_boundary_handling = PolyphyEnums.EnumAgentBoundaryHandling.WRAP
+    distance_sampling_distribution = EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
+    directional_sampling_distribution = EnumDirectionalSamplingDistribution.CONE
+    directional_mutation_type = EnumDirectionalMutationType.PROBABILISTIC
+    deposit_fetching_strategy = EnumDepositFetchingStrategy.NN_PERTURBED
+    agent_boundary_handling = EnumAgentBoundaryHandling.WRAP
 
     @staticmethod
     def set_flag(flag_name, new_value):
@@ -300,38 +288,38 @@ class PolyPhyWindow:
                     simulationVisuals.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(simulationVisuals.trace_vis, 10.0), -3.0, 3.0))
             
                     window.GUI.text("Distance distribution:")
-                    if window.GUI.checkbox("Constant", StateFlags.distance_sampling_distribution == PolyphyEnums.EnumDistanceSamplingDistribution.CONSTANT):
-                        StateFlags.distance_sampling_distribution = PolyphyEnums.EnumDistanceSamplingDistribution.CONSTANT
-                    if window.GUI.checkbox("Exponential", StateFlags.distance_sampling_distribution == PolyphyEnums.EnumDistanceSamplingDistribution.EXPONENTIAL):
-                        StateFlags.distance_sampling_distribution = PolyphyEnums.EnumDistanceSamplingDistribution.EXPONENTIAL
-                    if window.GUI.checkbox("Maxwell-Boltzmann", StateFlags.distance_sampling_distribution == PolyphyEnums.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
-                        StateFlags.distance_sampling_distribution = PolyphyEnums.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
+                    if window.GUI.checkbox("Constant", StateFlags.distance_sampling_distribution == StateFlags.EnumDistanceSamplingDistribution.CONSTANT):
+                        StateFlags.distance_sampling_distribution = StateFlags.EnumDistanceSamplingDistribution.CONSTANT
+                    if window.GUI.checkbox("Exponential", StateFlags.distance_sampling_distribution == StateFlags.EnumDistanceSamplingDistribution.EXPONENTIAL):
+                        StateFlags.distance_sampling_distribution = StateFlags.EnumDistanceSamplingDistribution.EXPONENTIAL
+                    if window.GUI.checkbox("Maxwell-Boltzmann", StateFlags.distance_sampling_distribution == StateFlags.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
+                        StateFlags.distance_sampling_distribution = StateFlags.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
             
                     window.GUI.text("Directional distribution:")
-                    if window.GUI.checkbox("Discrete", StateFlags.directional_sampling_distribution == PolyphyEnums.EnumDirectionalSamplingDistribution.DISCRETE):
-                        StateFlags.directional_sampling_distribution = PolyphyEnums.EnumDirectionalSamplingDistribution.DISCRETE
-                    if window.GUI.checkbox("Cone", StateFlags.directional_sampling_distribution == PolyphyEnums.EnumDirectionalSamplingDistribution.CONE):
-                        StateFlags.directional_sampling_distribution = PolyphyEnums.EnumDirectionalSamplingDistribution.CONE
+                    if window.GUI.checkbox("Discrete", StateFlags.directional_sampling_distribution == StateFlags.EnumDirectionalSamplingDistribution.DISCRETE):
+                        StateFlags.directional_sampling_distribution = StateFlags.EnumDirectionalSamplingDistribution.DISCRETE
+                    if window.GUI.checkbox("Cone", StateFlags.directional_sampling_distribution == StateFlags.EnumDirectionalSamplingDistribution.CONE):
+                        StateFlags.directional_sampling_distribution = StateFlags.EnumDirectionalSamplingDistribution.CONE
             
                     window.GUI.text("Directional mutation:")
-                    if window.GUI.checkbox("Deterministic", StateFlags.directional_mutation_type == PolyphyEnums.EnumDirectionalMutationType.DETERMINISTIC):
-                        StateFlags.directional_mutation_type = PolyphyEnums.EnumDirectionalMutationType.DETERMINISTIC
-                    if window.GUI.checkbox("Stochastic", StateFlags.directional_mutation_type == PolyphyEnums.EnumDirectionalMutationType.PROBABILISTIC):
-                        StateFlags.directional_mutation_type = PolyphyEnums.EnumDirectionalMutationType.PROBABILISTIC
+                    if window.GUI.checkbox("Deterministic", StateFlags.directional_mutation_type == StateFlags.EnumDirectionalMutationType.DETERMINISTIC):
+                        StateFlags.directional_mutation_type = StateFlags.EnumDirectionalMutationType.DETERMINISTIC
+                    if window.GUI.checkbox("Stochastic", StateFlags.directional_mutation_type == StateFlags.EnumDirectionalMutationType.PROBABILISTIC):
+                        StateFlags.directional_mutation_type = StateFlags.EnumDirectionalMutationType.PROBABILISTIC
             
                     window.GUI.text("Deposit fetching:")
-                    if window.GUI.checkbox("Nearest neighbor", StateFlags.deposit_fetching_strategy == PolyphyEnums.EnumDepositFetchingStrategy.NN):
-                        StateFlags.deposit_fetching_strategy = PolyphyEnums.EnumDepositFetchingStrategy.NN
-                    if window.GUI.checkbox("Noise-perturbed NN", StateFlags.deposit_fetching_strategy == PolyphyEnums.EnumDepositFetchingStrategy.NN_PERTURBED):
-                        StateFlags.deposit_fetching_strategy = PolyphyEnums.EnumDepositFetchingStrategy.NN_PERTURBED
+                    if window.GUI.checkbox("Nearest neighbor", StateFlags.deposit_fetching_strategy == StateFlags.EnumDepositFetchingStrategy.NN):
+                        StateFlags.deposit_fetching_strategy = StateFlags.EnumDepositFetchingStrategy.NN
+                    if window.GUI.checkbox("Noise-perturbed NN", StateFlags.deposit_fetching_strategy == StateFlags.EnumDepositFetchingStrategy.NN_PERTURBED):
+                        StateFlags.deposit_fetching_strategy = StateFlags.EnumDepositFetchingStrategy.NN_PERTURBED
             
                     window.GUI.text("Agent boundary handling:")
-                    if window.GUI.checkbox("Wrap around", StateFlags.agent_boundary_handling == PolyphyEnums.EnumAgentBoundaryHandling.WRAP):
-                        StateFlags.agent_boundary_handling = PolyphyEnums.EnumAgentBoundaryHandling.WRAP
-                    if window.GUI.checkbox("Reinitialize center", StateFlags.agent_boundary_handling == PolyphyEnums.EnumAgentBoundaryHandling.REINIT_CENTER):
-                        StateFlags.agent_boundary_handling = PolyphyEnums.EnumAgentBoundaryHandling.REINIT_CENTER
-                    if window.GUI.checkbox("Reinitialize randomly", StateFlags.agent_boundary_handling == PolyphyEnums.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
-                        StateFlags.agent_boundary_handling = PolyphyEnums.EnumAgentBoundaryHandling.REINIT_RANDOMLY
+                    if window.GUI.checkbox("Wrap around", StateFlags.agent_boundary_handling == StateFlags.EnumAgentBoundaryHandling.WRAP):
+                        StateFlags.agent_boundary_handling = StateFlags.EnumAgentBoundaryHandling.WRAP
+                    if window.GUI.checkbox("Reinitialize center", StateFlags.agent_boundary_handling == StateFlags.EnumAgentBoundaryHandling.REINIT_CENTER):
+                        StateFlags.agent_boundary_handling = StateFlags.EnumAgentBoundaryHandling.REINIT_CENTER
+                    if window.GUI.checkbox("Reinitialize randomly", StateFlags.agent_boundary_handling == StateFlags.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
+                        StateFlags.agent_boundary_handling = StateFlags.EnumAgentBoundaryHandling.REINIT_RANDOMLY
             
                     window.GUI.text("Misc controls:")
                     simulationVisuals.do_simulate = window.GUI.checkbox("Run simulation", simulationVisuals.do_simulate)

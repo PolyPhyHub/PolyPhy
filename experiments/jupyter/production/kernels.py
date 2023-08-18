@@ -1,6 +1,6 @@
 import taichi as ti
 import taichi.math as timath
-from polyphy_functions import TypeAliases, PolyphyEnums, SimulationConstants, StateFlags
+from polyphy_functions import TypeAliases, StateFlags, SimulationConstants, StateFlags
 
 @ti.data_oriented
 class Kernels:
@@ -64,19 +64,19 @@ class Kernels:
             ## Generate new mutated angle by perturbing the original
             dir_fwd = self.angle_to_dir_2D(angle)
             angle_mut = angle
-            if StateFlags.directional_sampling_distribution == PolyphyEnums.EnumDirectionalSamplingDistribution.DISCRETE:
+            if StateFlags.directional_sampling_distribution == StateFlags.EnumDirectionalSamplingDistribution.DISCRETE:
                 angle_mut += (1.0 if ti.random(dtype=TypeAliases.FLOAT_GPU) > 0.5 else -1.0) * sense_angle
-            elif StateFlags.directional_sampling_distribution == PolyphyEnums.EnumDirectionalSamplingDistribution.CONE:
+            elif StateFlags.directional_sampling_distribution == StateFlags.EnumDirectionalSamplingDistribution.CONE:
                 angle_mut += 2.0 * (ti.random(dtype=TypeAliases.FLOAT_GPU) - 0.5) * sense_angle
             dir_mut = self.angle_to_dir_2D(angle_mut)
 
             ## Generate sensing distance for the agent, constant or probabilistic
             agent_sensing_distance = sense_distance
             distance_scaling_factor = 1.0
-            if StateFlags.distance_sampling_distribution == PolyphyEnums.EnumDistanceSamplingDistribution.EXPONENTIAL:
+            if StateFlags.distance_sampling_distribution == StateFlags.EnumDistanceSamplingDistribution.EXPONENTIAL:
                 xi = timath.clamp(ti.random(dtype=TypeAliases.FLOAT_GPU), 0.001, 0.999) ## log & pow are unstable in extremes
                 distance_scaling_factor = -ti.log(xi)
-            elif StateFlags.distance_sampling_distribution == PolyphyEnums.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN:
+            elif StateFlags.distance_sampling_distribution == StateFlags.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN:
                 xi = timath.clamp(ti.random(dtype=TypeAliases.FLOAT_GPU), 0.001, 0.999) ## log & pow are unstable in extremes
                 distance_scaling_factor = -0.3033 * ti.log( (ti.pow(xi + 0.005, -0.4) - 0.9974) / 7.326 )
             agent_sensing_distance *= distance_scaling_factor
@@ -84,10 +84,10 @@ class Kernels:
             ## Fetch deposit to guide the agent
             deposit_fwd = 1.0
             deposit_mut = 0.0
-            if StateFlags.deposit_fetching_strategy == PolyphyEnums.EnumDepositFetchingStrategy.NN:
+            if StateFlags.deposit_fetching_strategy == StateFlags.EnumDepositFetchingStrategy.NN:
                 deposit_fwd = self.fieldVariables.deposit_field[self.world_to_grid_2D(pos + agent_sensing_distance * dir_fwd, TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MIN), TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MAX), TypeAliases.VEC2i(self.derivedVariables.DEPOSIT_RESOLUTION))][current_deposit_index]
                 deposit_mut = self.fieldVariables.deposit_field[self.world_to_grid_2D(pos + agent_sensing_distance * dir_mut, TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MIN), TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MAX), TypeAliases.VEC2i(self.derivedVariables.DEPOSIT_RESOLUTION))][current_deposit_index]
-            elif StateFlags.deposit_fetching_strategy == PolyphyEnums.EnumDepositFetchingStrategy.NN_PERTURBED:
+            elif StateFlags.deposit_fetching_strategy == StateFlags.EnumDepositFetchingStrategy.NN_PERTURBED:
                 ## Fetches the deposit by perturbing the original position by a small delta
                 ## This provides cheap stochastic filtering instead of multi-fetch filters
                 field_dd = 2.0 * ti.cast(self.dataLoaders.DOMAIN_SIZE[0], TypeAliases.FLOAT_GPU) / ti.cast(self.derivedVariables.DEPOSIT_RESOLUTION[0], TypeAliases.FLOAT_GPU)
@@ -98,9 +98,9 @@ class Kernels:
 
             ## Generate new direction for the agent based on the sampled deposit
             angle_new = angle
-            if StateFlags.directional_mutation_type == PolyphyEnums.EnumDirectionalMutationType.DETERMINISTIC:
+            if StateFlags.directional_mutation_type == StateFlags.EnumDirectionalMutationType.DETERMINISTIC:
                 angle_new = (SimulationConstants.STEERING_RATE * angle_mut + (1.0-SimulationConstants.STEERING_RATE) * angle) if (deposit_mut > deposit_fwd) else (angle)
-            elif StateFlags.directional_mutation_type == PolyphyEnums.EnumDirectionalMutationType.PROBABILISTIC:
+            elif StateFlags.directional_mutation_type == StateFlags.EnumDirectionalMutationType.PROBABILISTIC:
                 p_remain = ti.pow(deposit_fwd, sampling_exponent)
                 p_mutate = ti.pow(deposit_mut, sampling_exponent)
                 mutation_probability = p_mutate / (p_remain + p_mutate)
@@ -109,14 +109,14 @@ class Kernels:
             pos_new = pos + step_size * distance_scaling_factor * dir_new
 
             ## Agent behavior at domain boundaries
-            if StateFlags.agent_boundary_handling == PolyphyEnums.EnumAgentBoundaryHandling.WRAP:
+            if StateFlags.agent_boundary_handling == StateFlags.EnumAgentBoundaryHandling.WRAP:
                 pos_new[0] = self.custom_mod(pos_new[0] - self.dataLoaders.DOMAIN_MIN[0] + self.dataLoaders.DOMAIN_SIZE[0], self.dataLoaders.DOMAIN_SIZE[0]) + self.dataLoaders.DOMAIN_MIN[0]
                 pos_new[1] = self.custom_mod(pos_new[1] - self.dataLoaders.DOMAIN_MIN[1] + self.dataLoaders.DOMAIN_SIZE[1], self.dataLoaders.DOMAIN_SIZE[1]) + self.dataLoaders.DOMAIN_MIN[1]
-            elif StateFlags.agent_boundary_handling == PolyphyEnums.EnumAgentBoundaryHandling.REINIT_CENTER:
+            elif StateFlags.agent_boundary_handling == StateFlags.EnumAgentBoundaryHandling.REINIT_CENTER:
                 if pos_new[0] <= self.dataLoaders.DOMAIN_MIN[0] or pos_new[0] >= self.dataLoaders.DOMAIN_MAX[0] or pos_new[1] <= self.dataLoaders.DOMAIN_MIN[1] or pos_new[1] >= self.dataLoaders.DOMAIN_MAX[1]:
                     pos_new[0] = 0.5 * (self.dataLoaders.DOMAIN_MIN[0] + self.dataLoaders.DOMAIN_MAX[0])
                     pos_new[1] = 0.5 * (self.dataLoaders.DOMAIN_MIN[1] + self.dataLoaders.DOMAIN_MAX[1])
-            elif StateFlags.agent_boundary_handling == PolyphyEnums.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
+            elif StateFlags.agent_boundary_handling == StateFlags.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
                 if pos_new[0] <= self.dataLoaders.DOMAIN_MIN[0] or pos_new[0] >= self.dataLoaders.DOMAIN_MAX[0] or pos_new[1] <= self.dataLoaders.DOMAIN_MIN[1] or pos_new[1] >= self.dataLoaders.DOMAIN_MAX[1]:
                     pos_new[0] = self.dataLoaders.DOMAIN_MIN[0] + timath.clamp(ti.random(dtype=TypeAliases.FLOAT_GPU), 0.001, 0.999) * self.dataLoaders.DOMAIN_SIZE[0]
                     pos_new[1] = self.dataLoaders.DOMAIN_MIN[1] + timath.clamp(ti.random(dtype=TypeAliases.FLOAT_GPU), 0.001, 0.999) * self.dataLoaders.DOMAIN_SIZE[1]
