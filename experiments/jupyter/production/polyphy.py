@@ -13,3 +13,5 @@ class PolyPhy:
     def start_simulation(self):
         PolyPhyWindow(self.k,self.simulationVisuals)
         PostSimulation(self.simulationVisuals)
+
+PolyPhy().start_simulation()
