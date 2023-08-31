@@ -4,10 +4,6 @@ from polyphy_functions import TypeAliases, StateFlags, SimulationConstants, Stat
 
 @ti.data_oriented
 class Kernels:
-    def __init__(self,derivedVariables,fieldVariables, dataLoaders):
-        self.derivedVariables = derivedVariables
-        self.fieldVariables = fieldVariables
-        self.dataLoaders = dataLoaders
     ## Define all GPU functions and kernels for data and agent processing
     @ti.kernel
     def zero_field(self,f: ti.template()):
@@ -36,12 +32,12 @@ class Kernels:
         return a - b * ti.floor(a / b)
 
     @ti.kernel
-    def data_step(self,data_deposit: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU):
-        for point in ti.ndrange(self.fieldVariables.data_field.shape[0]):
+    def data_step(self,data_field: ti.template(), deposit_field: ti.template(), data_deposit: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU, DOMAIN_MIN: ti.template(), DOMAIN_MAX: ti.template(), DEPOSIT_RESOLUTION: ti.template()):
+        for point in ti.ndrange(data_field.shape[0]):
             pos = TypeAliases.VEC2f(0.0, 0.0)
-            pos[0], pos[1], weight = self.fieldVariables.data_field[point]
-            deposit_cell = self.world_to_grid_2D(pos, TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MIN), TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MAX), TypeAliases.VEC2i(self.derivedVariables.DEPOSIT_RESOLUTION))
-            self.fieldVariables.deposit_field[deposit_cell][current_deposit_index] += data_deposit * weight
+            pos[0], pos[1], weight = data_field[point]
+            deposit_cell = self.world_to_grid_2D(pos, TypeAliases.VEC2f(DOMAIN_MIN), TypeAliases.VEC2f(DOMAIN_MAX), TypeAliases.VEC2i(DEPOSIT_RESOLUTION))
+            deposit_field[deposit_cell][current_deposit_index] += data_deposit * weight
         return
 
     @ti.kernel
@@ -56,10 +52,21 @@ class Kernels:
                 directional_sampling_distribution: TypeAliases.INT_GPU,\
                 directional_mutation_type: TypeAliases.INT_GPU,\
                 deposit_fetching_strategy: TypeAliases.INT_GPU,\
-                agent_boundary_handling: TypeAliases.INT_GPU):
-        for agent in ti.ndrange(self.fieldVariables.agents_field.shape[0]):
+                agent_boundary_handling: TypeAliases.INT_GPU,
+                agents_field: ti.template(),\
+                deposit_field: ti.template(),\
+                trace_field: ti.template(),\
+                N_DATA: ti.template(),\
+                N_AGENTS: ti.template(),\
+                DOMAIN_SIZE: TypeAliases.VEC2f,\
+                DOMAIN_MIN: ti.template(),\
+                DOMAIN_MAX: ti.template(),\
+                DEPOSIT_RESOLUTION: ti.template(),\
+                TRACE_RESOLUTION: TypeAliases.VEC2i
+                ):
+        for agent in ti.ndrange(agents_field.shape[0]):
             pos = TypeAliases.VEC2f(0.0, 0.0)
-            pos[0], pos[1], angle, weight = self.fieldVariables.agents_field[agent]
+            pos[0], pos[1], angle, weight = agents_field[agent]
             
             ## Generate new mutated angle by perturbing the original
             dir_fwd = self.angle_to_dir_2D(angle)
@@ -85,16 +92,16 @@ class Kernels:
             deposit_fwd = 1.0
             deposit_mut = 0.0
             if StateFlags.deposit_fetching_strategy == StateFlags.EnumDepositFetchingStrategy.NN:
-                deposit_fwd = self.fieldVariables.deposit_field[self.world_to_grid_2D(pos + agent_sensing_distance * dir_fwd, TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MIN), TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MAX), TypeAliases.VEC2i(self.derivedVariables.DEPOSIT_RESOLUTION))][current_deposit_index]
-                deposit_mut = self.fieldVariables.deposit_field[self.world_to_grid_2D(pos + agent_sensing_distance * dir_mut, TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MIN), TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MAX), TypeAliases.VEC2i(self.derivedVariables.DEPOSIT_RESOLUTION))][current_deposit_index]
+                deposit_fwd = deposit_field[self.world_to_grid_2D(pos + agent_sensing_distance * dir_fwd, TypeAliases.VEC2f(DOMAIN_MIN), TypeAliases.VEC2f(DOMAIN_MAX), TypeAliases.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
+                deposit_mut = deposit_field[self.world_to_grid_2D(pos + agent_sensing_distance * dir_mut, TypeAliases.VEC2f(DOMAIN_MIN), TypeAliases.VEC2f(DOMAIN_MAX), TypeAliases.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
             elif StateFlags.deposit_fetching_strategy == StateFlags.EnumDepositFetchingStrategy.NN_PERTURBED:
                 ## Fetches the deposit by perturbing the original position by a small delta
                 ## This provides cheap stochastic filtering instead of multi-fetch filters
-                field_dd = 2.0 * ti.cast(self.dataLoaders.DOMAIN_SIZE[0], TypeAliases.FLOAT_GPU) / ti.cast(self.derivedVariables.DEPOSIT_RESOLUTION[0], TypeAliases.FLOAT_GPU)
+                field_dd = 2.0 * ti.cast(DOMAIN_SIZE[0], TypeAliases.FLOAT_GPU) / ti.cast(DEPOSIT_RESOLUTION[0], TypeAliases.FLOAT_GPU)
                 pos_fwd = pos + agent_sensing_distance * dir_fwd + (field_dd * ti.random(dtype=TypeAliases.FLOAT_GPU) * self.angle_to_dir_2D(2.0 * timath.pi * ti.random(dtype=TypeAliases.FLOAT_GPU)))
-                deposit_fwd = self.fieldVariables.deposit_field[self.world_to_grid_2D(pos_fwd, TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MIN), TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MAX), TypeAliases.VEC2i(self.derivedVariables.DEPOSIT_RESOLUTION))][current_deposit_index]
+                deposit_fwd = deposit_field[self.world_to_grid_2D(pos_fwd, TypeAliases.VEC2f(DOMAIN_MIN), TypeAliases.VEC2f(DOMAIN_MAX), TypeAliases.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
                 pos_mut = pos + agent_sensing_distance * dir_mut + (field_dd * ti.random(dtype=TypeAliases.FLOAT_GPU) * self.angle_to_dir_2D(2.0 * timath.pi * ti.random(dtype=TypeAliases.FLOAT_GPU)))
-                deposit_mut = self.fieldVariables.deposit_field[self.world_to_grid_2D(pos_mut, TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MIN), TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MAX), TypeAliases.VEC2i(self.derivedVariables.DEPOSIT_RESOLUTION))][current_deposit_index]
+                deposit_mut = deposit_field[self.world_to_grid_2D(pos_mut, TypeAliases.VEC2f(DOMAIN_MIN), TypeAliases.VEC2f(DOMAIN_MAX), TypeAliases.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
 
             ## Generate new direction for the agent based on the sampled deposit
             angle_new = angle
@@ -110,60 +117,60 @@ class Kernels:
 
             ## Agent behavior at domain boundaries
             if StateFlags.agent_boundary_handling == StateFlags.EnumAgentBoundaryHandling.WRAP:
-                pos_new[0] = self.custom_mod(pos_new[0] - self.dataLoaders.DOMAIN_MIN[0] + self.dataLoaders.DOMAIN_SIZE[0], self.dataLoaders.DOMAIN_SIZE[0]) + self.dataLoaders.DOMAIN_MIN[0]
-                pos_new[1] = self.custom_mod(pos_new[1] - self.dataLoaders.DOMAIN_MIN[1] + self.dataLoaders.DOMAIN_SIZE[1], self.dataLoaders.DOMAIN_SIZE[1]) + self.dataLoaders.DOMAIN_MIN[1]
+                pos_new[0] = self.custom_mod(pos_new[0] - DOMAIN_MIN[0] + DOMAIN_SIZE[0], DOMAIN_SIZE[0]) + DOMAIN_MIN[0]
+                pos_new[1] = self.custom_mod(pos_new[1] - DOMAIN_MIN[1] + DOMAIN_SIZE[1], DOMAIN_SIZE[1]) + DOMAIN_MIN[1]
             elif StateFlags.agent_boundary_handling == StateFlags.EnumAgentBoundaryHandling.REINIT_CENTER:
-                if pos_new[0] <= self.dataLoaders.DOMAIN_MIN[0] or pos_new[0] >= self.dataLoaders.DOMAIN_MAX[0] or pos_new[1] <= self.dataLoaders.DOMAIN_MIN[1] or pos_new[1] >= self.dataLoaders.DOMAIN_MAX[1]:
-                    pos_new[0] = 0.5 * (self.dataLoaders.DOMAIN_MIN[0] + self.dataLoaders.DOMAIN_MAX[0])
-                    pos_new[1] = 0.5 * (self.dataLoaders.DOMAIN_MIN[1] + self.dataLoaders.DOMAIN_MAX[1])
+                if pos_new[0] <= DOMAIN_MIN[0] or pos_new[0] >= DOMAIN_MAX[0] or pos_new[1] <= DOMAIN_MIN[1] or pos_new[1] >= DOMAIN_MAX[1]:
+                    pos_new[0] = 0.5 * (DOMAIN_MIN[0] + DOMAIN_MAX[0])
+                    pos_new[1] = 0.5 * (DOMAIN_MIN[1] + DOMAIN_MAX[1])
             elif StateFlags.agent_boundary_handling == StateFlags.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
-                if pos_new[0] <= self.dataLoaders.DOMAIN_MIN[0] or pos_new[0] >= self.dataLoaders.DOMAIN_MAX[0] or pos_new[1] <= self.dataLoaders.DOMAIN_MIN[1] or pos_new[1] >= self.dataLoaders.DOMAIN_MAX[1]:
-                    pos_new[0] = self.dataLoaders.DOMAIN_MIN[0] + timath.clamp(ti.random(dtype=TypeAliases.FLOAT_GPU), 0.001, 0.999) * self.dataLoaders.DOMAIN_SIZE[0]
-                    pos_new[1] = self.dataLoaders.DOMAIN_MIN[1] + timath.clamp(ti.random(dtype=TypeAliases.FLOAT_GPU), 0.001, 0.999) * self.dataLoaders.DOMAIN_SIZE[1]
+                if pos_new[0] <= DOMAIN_MIN[0] or pos_new[0] >= DOMAIN_MAX[0] or pos_new[1] <= DOMAIN_MIN[1] or pos_new[1] >= DOMAIN_MAX[1]:
+                    pos_new[0] = DOMAIN_MIN[0] + timath.clamp(ti.random(dtype=TypeAliases.FLOAT_GPU), 0.001, 0.999) * DOMAIN_SIZE[0]
+                    pos_new[1] = DOMAIN_MIN[1] + timath.clamp(ti.random(dtype=TypeAliases.FLOAT_GPU), 0.001, 0.999) * DOMAIN_SIZE[1]
 
-            self.fieldVariables.agents_field[agent][0] = pos_new[0]
-            self.fieldVariables.agents_field[agent][1] = pos_new[1]
-            self.fieldVariables.agents_field[agent][2] = angle_new
+            agents_field[agent][0] = pos_new[0]
+            agents_field[agent][1] = pos_new[1]
+            agents_field[agent][2] = angle_new
 
             ## Generate deposit and trace at the new position
-            deposit_cell = self.world_to_grid_2D(pos_new, TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MIN), TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MAX), TypeAliases.VEC2i(self.derivedVariables.DEPOSIT_RESOLUTION))
-            self.fieldVariables.deposit_field[deposit_cell][current_deposit_index] += agent_deposit * weight
+            deposit_cell = self.world_to_grid_2D(pos_new, TypeAliases.VEC2f(DOMAIN_MIN), TypeAliases.VEC2f(DOMAIN_MAX), TypeAliases.VEC2i(DEPOSIT_RESOLUTION))
+            deposit_field[deposit_cell][current_deposit_index] += agent_deposit * weight
 
-            trace_cell = self.world_to_grid_2D(pos_new, TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MIN), TypeAliases.VEC2f(self.dataLoaders.DOMAIN_MAX), TypeAliases.VEC2i(self.derivedVariables.TRACE_RESOLUTION))
-            self.fieldVariables.trace_field[trace_cell][0] += ti.max(1.0e-4, ti.cast(self.dataLoaders.N_DATA, TypeAliases.FLOAT_GPU) / ti.cast(self.dataLoaders.N_AGENTS, TypeAliases.FLOAT_GPU)) * weight
+            trace_cell = self.world_to_grid_2D(pos_new, TypeAliases.VEC2f(DOMAIN_MIN), TypeAliases.VEC2f(DOMAIN_MAX), TypeAliases.VEC2i(TRACE_RESOLUTION))
+            trace_field[trace_cell][0] += ti.max(1.0e-4, ti.cast(N_DATA, TypeAliases.FLOAT_GPU) / ti.cast(N_AGENTS, TypeAliases.FLOAT_GPU)) * weight
         return
 
     DIFFUSION_KERNEL = [1.0, 1.0, 0.707]
     DIFFUSION_KERNEL_NORM = DIFFUSION_KERNEL[0] + 4.0 * DIFFUSION_KERNEL[1] + 4.0 * DIFFUSION_KERNEL[2]
 
     @ti.kernel
-    def deposit_relaxation_step(self,attenuation: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU):
-        for cell in ti.grouped(self.fieldVariables.deposit_field):
+    def deposit_relaxation_step(self,attenuation: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU, deposit_field: ti.template(), DEPOSIT_RESOLUTION: ti.template()):
+        for cell in ti.grouped(deposit_field):
             ## The "beautiful" expression below implements a 3x3 kernel diffusion with manually wrapped addressing
             ## Taichi doesn't support modulo for tuples so each dimension is handled separately
-            value =   self.DIFFUSION_KERNEL[0] * self.fieldVariables.deposit_field[( (cell[0] + 0 + self.derivedVariables.DEPOSIT_RESOLUTION[0]) % self.derivedVariables.DEPOSIT_RESOLUTION[0], (cell[1] + 0 + self.derivedVariables.DEPOSIT_RESOLUTION[1]) % self.derivedVariables.DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * self.fieldVariables.deposit_field[( (cell[0] - 1 + self.derivedVariables.DEPOSIT_RESOLUTION[0]) % self.derivedVariables.DEPOSIT_RESOLUTION[0], (cell[1] + 0 + self.derivedVariables.DEPOSIT_RESOLUTION[1]) % self.derivedVariables.DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * self.fieldVariables.deposit_field[( (cell[0] + 1 + self.derivedVariables.DEPOSIT_RESOLUTION[0]) % self.derivedVariables.DEPOSIT_RESOLUTION[0], (cell[1] + 0 + self.derivedVariables.DEPOSIT_RESOLUTION[1]) % self.derivedVariables.DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * self.fieldVariables.deposit_field[( (cell[0] + 0 + self.derivedVariables.DEPOSIT_RESOLUTION[0]) % self.derivedVariables.DEPOSIT_RESOLUTION[0], (cell[1] - 1 + self.derivedVariables.DEPOSIT_RESOLUTION[1]) % self.derivedVariables.DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * self.fieldVariables.deposit_field[( (cell[0] + 0 + self.derivedVariables.DEPOSIT_RESOLUTION[0]) % self.derivedVariables.DEPOSIT_RESOLUTION[0], (cell[1] + 1 + self.derivedVariables.DEPOSIT_RESOLUTION[1]) % self.derivedVariables.DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * self.fieldVariables.deposit_field[( (cell[0] - 1 + self.derivedVariables.DEPOSIT_RESOLUTION[0]) % self.derivedVariables.DEPOSIT_RESOLUTION[0], (cell[1] - 1 + self.derivedVariables.DEPOSIT_RESOLUTION[1]) % self.derivedVariables.DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * self.fieldVariables.deposit_field[( (cell[0] + 1 + self.derivedVariables.DEPOSIT_RESOLUTION[0]) % self.derivedVariables.DEPOSIT_RESOLUTION[0], (cell[1] + 1 + self.derivedVariables.DEPOSIT_RESOLUTION[1]) % self.derivedVariables.DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * self.fieldVariables.deposit_field[( (cell[0] + 1 + self.derivedVariables.DEPOSIT_RESOLUTION[0]) % self.derivedVariables.DEPOSIT_RESOLUTION[0], (cell[1] - 1 + self.derivedVariables.DEPOSIT_RESOLUTION[1]) % self.derivedVariables.DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * self.fieldVariables.deposit_field[( (cell[0] - 1 + self.derivedVariables.DEPOSIT_RESOLUTION[0]) % self.derivedVariables.DEPOSIT_RESOLUTION[0], (cell[1] + 1 + self.derivedVariables.DEPOSIT_RESOLUTION[1]) % self.derivedVariables.DEPOSIT_RESOLUTION[1])][current_deposit_index]
-            self.fieldVariables.deposit_field[cell][1 - current_deposit_index] = attenuation * value / self.DIFFUSION_KERNEL_NORM
+            value =   self.DIFFUSION_KERNEL[0] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]
+            deposit_field[cell][1 - current_deposit_index] = attenuation * value / self.DIFFUSION_KERNEL_NORM
         return
 
     @ti.kernel
-    def trace_relaxation_step(self,attenuation: TypeAliases.FLOAT_GPU):
-        for cell in ti.grouped(self.fieldVariables.trace_field):
+    def trace_relaxation_step(self,attenuation: TypeAliases.FLOAT_GPU, trace_field: ti.template()):
+        for cell in ti.grouped(trace_field):
             ## Perturb the attenuation by a small factor to avoid accumulating quantization errors
-            self.fieldVariables.trace_field[cell][0] *= attenuation - 0.001 + 0.002 * ti.random(dtype=TypeAliases.FLOAT_GPU)
+            trace_field[cell][0] *= attenuation - 0.001 + 0.002 * ti.random(dtype=TypeAliases.FLOAT_GPU)
         return
 
     @ti.kernel
-    def render_visualization(self,deposit_vis: TypeAliases.FLOAT_GPU, trace_vis: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU):
-        for x, y in ti.ndrange(self.fieldVariables.vis_field.shape[0], self.fieldVariables.vis_field.shape[1]):
-            deposit_val = self.fieldVariables.deposit_field[x * self.derivedVariables.DEPOSIT_RESOLUTION[0] // self.derivedVariables.VIS_RESOLUTION[0], y * self.derivedVariables.DEPOSIT_RESOLUTION[1] // self.derivedVariables.VIS_RESOLUTION[1]][current_deposit_index]
-            trace_val = self.fieldVariables.trace_field[x * self.derivedVariables.TRACE_RESOLUTION[0] // self.derivedVariables.VIS_RESOLUTION[0], y * self.derivedVariables.TRACE_RESOLUTION[1] // self.derivedVariables.VIS_RESOLUTION[1]]
-            self.fieldVariables.vis_field[x, y] = ti.pow(TypeAliases.VEC3f(trace_vis * trace_val, deposit_vis * deposit_val, ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)), 1.0/2.2)
+    def render_visualization(self,deposit_vis: TypeAliases.FLOAT_GPU, trace_vis: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU, deposit_field: ti.template(),trace_field: ti.template(), vis_field: ti.template(), DEPOSIT_RESOLUTION: TypeAliases.VEC2i, VIS_RESOLUTION: TypeAliases.VEC2i, TRACE_RESOLUTION: TypeAliases.VEC2i):
+        for x, y in ti.ndrange(vis_field.shape[0], vis_field.shape[1]):
+            deposit_val = deposit_field[x * DEPOSIT_RESOLUTION[0] // VIS_RESOLUTION[0], y * DEPOSIT_RESOLUTION[1] // VIS_RESOLUTION[1]][current_deposit_index]
+            trace_val = trace_field[x * TRACE_RESOLUTION[0] // VIS_RESOLUTION[0], y * TRACE_RESOLUTION[1] // VIS_RESOLUTION[1]]
+            vis_field[x, y] = ti.pow(TypeAliases.VEC3f(trace_vis * trace_val, deposit_vis * deposit_val, ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)), 1.0/2.2)
         return

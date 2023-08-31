@@ -96,10 +96,6 @@ class StateFlags:
             raise AttributeError(f"'StateFlags' has no attribute '{flag_name}'")
 
 
-## Initialize Taichi
-ti.init(arch=ti.cpu)
-rng = default_rng()
-
 class DataLoader:
     ## Default root directory
     ROOT = '../../../'
@@ -118,6 +114,7 @@ class DataLoader:
 
     ## Load data
     ## If no input file then generate a random dataset
+    
     if len(INPUT_FILE) > 0:
         data = np.loadtxt(INPUT_FILE, delimiter=",").astype(TypeAliases .FLOAT_CPU)
         N_DATA = data.shape[0]
@@ -136,9 +133,12 @@ class DataLoader:
         DOMAIN_MIN = (0.0, 0.0)
         DOMAIN_MAX = SimulationConstants.DOMAIN_SIZE_DEFAULT
         data = np.zeros(shape=(N_DATA, 3), dtype = TypeAliases.FLOAT_CPU)
-        data[:, 0] = rng.normal(loc = DOMAIN_MIN[0] + 0.5 * DOMAIN_MAX[0], scale = 0.13 * DOMAIN_SIZE[0], size = N_DATA)
-        data[:, 1] = rng.normal(loc = DOMAIN_MIN[1] + 0.5 * DOMAIN_MAX[1], scale = 0.13 * DOMAIN_SIZE[1], size = N_DATA)
+        data[:, 0] = self.rng.normal(loc = DOMAIN_MIN[0] + 0.5 * DOMAIN_MAX[0], scale = 0.13 * DOMAIN_SIZE[0], size = N_DATA)
+        data[:, 1] = self.rng.normal(loc = DOMAIN_MIN[1] + 0.5 * DOMAIN_MAX[1], scale = 0.13 * DOMAIN_SIZE[1], size = N_DATA)
         data[:, 2] = AVG_WEIGHT
+
+    def __init__(self, rng=default_rng()):
+        self.rng = rng
 
 class DerivedVariables:
     ## Derived constants
@@ -151,11 +151,12 @@ class DerivedVariables:
 
 class Agents:
     ## Init agents
-    def __init__(self,dataLoader=DataLoader(),derivedVariables=DerivedVariables()):
+    def __init__(self,rng=default_rng(),dataLoader=DataLoader(),derivedVariables=DerivedVariables()):
+        self.rng = rng
         self.agents = np.zeros(shape=(dataLoader.N_AGENTS, 4), dtype = TypeAliases.FLOAT_CPU)
-        self.agents[:, 0] = rng.uniform(low = dataLoader.DOMAIN_MIN[0] + 0.001, high = dataLoader.DOMAIN_MAX[0] - 0.001, size = dataLoader.N_AGENTS)
-        self.agents[:, 1] = rng.uniform(low = dataLoader.DOMAIN_MIN[1] + 0.001, high = dataLoader.DOMAIN_MAX[1] - 0.001, size = dataLoader.N_AGENTS)
-        self.agents[:, 2] = rng.uniform(low = 0.0, high = 2.0 * np.pi, size = dataLoader.N_AGENTS)
+        self.agents[:, 0] = self.rng.uniform(low = dataLoader.DOMAIN_MIN[0] + 0.001, high = dataLoader.DOMAIN_MAX[0] - 0.001, size = dataLoader.N_AGENTS)
+        self.agents[:, 1] = self.rng.uniform(low = dataLoader.DOMAIN_MIN[1] + 0.001, high = dataLoader.DOMAIN_MAX[1] - 0.001, size = dataLoader.N_AGENTS)
+        self.agents[:, 2] = self.rng.uniform(low = 0.0, high = 2.0 * np.pi, size = dataLoader.N_AGENTS)
         self.agents[:, 3] = 1.0
 
         print('Simulation domain min:', dataLoader.DOMAIN_MIN)
@@ -369,9 +370,8 @@ class PolyPhyWindow:
             
                 ## Main simulation sequence
                 if simulationVisuals.do_simulate:
-                    k.data_step(simulationVisuals.data_deposit, simulationVisuals.current_deposit_index)
-                    k.agent_step(\
-                        simulationVisuals.sense_distance,\
+                    k.data_step(simulationVisuals.fieldVariables.data_field, simulationVisuals.fieldVariables.deposit_field,simulationVisuals.data_deposit, simulationVisuals.current_deposit_index, simulationVisuals.dataLoaders.DOMAIN_MIN, simulationVisuals.dataLoaders.DOMAIN_MAX, simulationVisuals.derivedVariables.DEPOSIT_RESOLUTION)
+                    k.agent_step(simulationVisuals.sense_distance,\
                         simulationVisuals.sense_angle,\
                         SimulationConstants.STEERING_RATE,\
                         simulationVisuals.sampling_exponent,\
@@ -382,13 +382,24 @@ class PolyPhyWindow:
                         StateFlags.directional_sampling_distribution,\
                         StateFlags.directional_mutation_type,\
                         StateFlags.deposit_fetching_strategy,\
-                        StateFlags.agent_boundary_handling)
-                    k.deposit_relaxation_step(simulationVisuals.deposit_attenuation, simulationVisuals.current_deposit_index)
-                    k.trace_relaxation_step(simulationVisuals.trace_attenuation)
+                        StateFlags.agent_boundary_handling,\
+                        simulationVisuals.fieldVariables.agents_field,\
+                        simulationVisuals.fieldVariables.deposit_field,\
+                        simulationVisuals.fieldVariables.trace_field,\
+                        simulationVisuals.dataLoaders.N_DATA,\
+                        simulationVisuals.dataLoaders.N_AGENTS,\
+                        simulationVisuals.dataLoaders.DOMAIN_SIZE,\
+                        simulationVisuals.dataLoaders.DOMAIN_MIN,\
+                        simulationVisuals.dataLoaders.DOMAIN_MAX,\
+                        simulationVisuals.derivedVariables.DEPOSIT_RESOLUTION,\
+                        simulationVisuals.derivedVariables.TRACE_RESOLUTION
+                        )
+                    k.deposit_relaxation_step(simulationVisuals.deposit_attenuation, simulationVisuals.current_deposit_index,simulationVisuals.fieldVariables.deposit_field,simulationVisuals.derivedVariables.DEPOSIT_RESOLUTION)
+                    k.trace_relaxation_step(simulationVisuals.trace_attenuation, simulationVisuals.fieldVariables.trace_field)
                     simulationVisuals.current_deposit_index = 1 - simulationVisuals.current_deposit_index
             
                 ## Render visualization
-                k.render_visualization(simulationVisuals.deposit_vis, simulationVisuals.trace_vis, simulationVisuals.current_deposit_index)
+                k.render_visualization(simulationVisuals.deposit_vis, simulationVisuals.trace_vis, simulationVisuals.current_deposit_index, simulationVisuals.fieldVariables.deposit_field,simulationVisuals.fieldVariables.trace_field, simulationVisuals.fieldVariables.vis_field, simulationVisuals.derivedVariables.DEPOSIT_RESOLUTION, simulationVisuals.derivedVariables.VIS_RESOLUTION, simulationVisuals.derivedVariables.TRACE_RESOLUTION)
                 canvas.set_image(simulationVisuals.fieldVariables.vis_field)
             
                 if do_screenshot:
