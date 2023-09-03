@@ -1,4 +1,4 @@
-from polyphy_functions import StateFlags, PolyPhyWindow, PostSimulation, SimulationVisuals, DataLoader, FieldVariables, DerivedVariables, Agents, TypeAliases, SimulationConstants
+from polyphy_functions import PolyPhyWindow, PostSimulation, SimulationVisuals, FieldVariables, Agents, TypeAliases, PPVariables, PPData
 from kernels import Kernels
 from numpy.random import default_rng
 import taichi as ti
@@ -8,12 +8,12 @@ class PolyPhy:
         ## Initialize Taichi
         ti.init(arch=ti.cpu)
         self.rng = default_rng()
-        self.dataLoaders = DataLoader(self.rng)
-        self.derivedVariables = DerivedVariables(self.dataLoaders)
-        self.agents = Agents(self.rng,self.dataLoaders,self.derivedVariables)
-        self.fieldVariables = FieldVariables(self.dataLoaders,self.derivedVariables)
+        self.ppData = PPData()
+        self.ppVariables = PPVariables(self.ppData)
+        self.agents = Agents(self.rng,self.ppVariables,self.ppData)
+        self.fieldVariables = FieldVariables(self.ppVariables,self.ppData)
         self.k = Kernels()
-        self.simulationVisuals = SimulationVisuals(self.k,self.dataLoaders,self.derivedVariables,self.agents,self.fieldVariables)
+        self.simulationVisuals = SimulationVisuals(self.k,self.ppVariables,self.ppData,self.agents,self.fieldVariables)
 
     def start_simulation(self):
         PolyPhyWindow(self.k,self.simulationVisuals)
