@@ -47,8 +47,6 @@ class PolyPhy:
                             help="Deposit fetching (select the method for deposit fetching)")
         parser.add_argument('--agent-boundary-handling', type=str, choices=['wrap-around', 're-initialize-center', 're-initialize-randomly'],
                             help="Agent boundary handling (specify how agents interact with boundaries)")
-
-        # Parse the command-line arguments
         self.args = parser.parse_args()
     
     def parse_values(self):
