@@ -81,6 +81,9 @@ class PPVariables:
 
     @staticmethod
     def set_value(constant_name, new_value):
+        CONSTANT_VARS = ["N_DATA_DEFAULT","N_AGENTS_DEFAULT","DOMAIN_SIZE_DEFAULT"]
+        if constant_name in CONSTANT_VARS:
+            raise AssertionError("Changing const variables do not work!")
         if hasattr(PPVariables, constant_name):
             setattr(PPVariables, constant_name, new_value)
         else:
