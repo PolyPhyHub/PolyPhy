@@ -89,6 +89,12 @@ class PPVariables:
         else:
             raise AttributeError(f"'PPVariables' has no attribute '{constant_name}'")
         
+    def setter(self, constant_name, new_value):
+        if hasattr(self, constant_name):
+            setattr(self, constant_name, new_value)
+        else:
+            raise AttributeError(f"'PPVariables' has no attribute '{constant_name}'")
+        
     def __init__(self,ppData):
         self.DATA_TO_AGENTS_RATIO = TypeAliases.FLOAT_CPU(ppData.N_DATA) / TypeAliases.FLOAT_CPU(ppData.N_AGENTS)
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]])
@@ -239,125 +245,131 @@ class SimulationVisuals:
         self.hide_UI = False
 
 class PolyPhyWindow:
-    def __init__(self, k, simulationVisuals):
+    def __init__(self, k, simulationVisuals, batch_mode=False, num_iterations=-1):
         ## check if file exists
         if os.path.exists("/tmp/flag") == False:
-            window = ti.ui.Window('PolyPhy', (simulationVisuals.fieldVariables.vis_field.shape[0], simulationVisuals.fieldVariables.vis_field.shape[1]), show_window = True)
-            window.show()
-            canvas = window.get_canvas()
+            if batch_mode is False:
+                window = ti.ui.Window('PolyPhy', (simulationVisuals.fieldVariables.vis_field.shape[0], simulationVisuals.fieldVariables.vis_field.shape[1]), show_window = True)
+                window.show()
+                canvas = window.get_canvas()
             
+            curr_iteration = 0
             ## Main simulation and rendering loop
-            while window.running:
-                
+            while window.running if 'window' in locals() else True:
+                if batch_mode is True and curr_iteration > num_iterations:
+                    break
+                curr_iteration = curr_iteration+1
+
                 do_export = False
                 do_screenshot = False
                 do_quit = False
-            
-                ## Handle controls
-                if window.get_event(ti.ui.PRESS):
-                    if window.event.key == 'e': do_export = True
-                    if window.event.key == 's': do_screenshot = True
-                    if window.event.key == 'h': hide_UI = not hide_UI
-                    if window.event.key in [ti.ui.ESCAPE]: do_quit = True
-                    if window.event.key in [ti.ui.LMB]:
+
+                if batch_mode is False:
+                    ## Handle controls
+                    if window.get_event(ti.ui.PRESS):
+                        if window.event.key == 'e': do_export = True
+                        if window.event.key == 's': do_screenshot = True
+                        if window.event.key == 'h': hide_UI = not hide_UI
+                        if window.event.key in [ti.ui.ESCAPE]: do_quit = True
+                        if window.event.key in [ti.ui.LMB]:
+                            simulationVisuals.data_edit_index = simulationVisuals.edit_data(simulationVisuals.data_edit_index,window)
+                    if window.is_pressed(ti.ui.RMB):
                         simulationVisuals.data_edit_index = simulationVisuals.edit_data(simulationVisuals.data_edit_index,window)
-                if window.is_pressed(ti.ui.RMB):
-                    simulationVisuals.data_edit_index = simulationVisuals.edit_data(simulationVisuals.data_edit_index,window)
                 
-                if not simulationVisuals.hide_UI:
-                    ## Draw main interactive control GUI
-                    window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[0]), 0.74 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[1]))
-                    window.GUI.text("MCPM parameters:")
-                    simulationVisuals.ppVariables.sense_distance = window.GUI.slider_float('Sensing dist', simulationVisuals.ppVariables.sense_distance, 0.1, 0.05 * np.max([simulationVisuals.ppData.DOMAIN_SIZE[0], simulationVisuals.ppData.DOMAIN_SIZE[1]]))
-                    simulationVisuals.ppVariables.sense_angle = window.GUI.slider_float('Sensing angle', simulationVisuals.ppVariables.sense_angle, 0.01, 0.5 * np.pi)
-                    simulationVisuals.ppVariables.sampling_exponent = window.GUI.slider_float('Sampling expo', simulationVisuals.ppVariables.sampling_exponent, 1.0, 10.0)
-                    simulationVisuals.ppVariables.step_size = window.GUI.slider_float('Step size', simulationVisuals.ppVariables.step_size, 0.0, 0.005 * np.max([simulationVisuals.ppData.DOMAIN_SIZE[0], simulationVisuals.ppData.DOMAIN_SIZE[1]]))
-                    simulationVisuals.ppVariables.data_deposit = window.GUI.slider_float('Data deposit', simulationVisuals.ppVariables.data_deposit, 0.0, simulationVisuals.ppVariables.MAX_DEPOSIT)
-                    simulationVisuals.ppVariables.agent_deposit = window.GUI.slider_float('Agent deposit', simulationVisuals.ppVariables.agent_deposit, 0.0, 10.0 * simulationVisuals.ppVariables.MAX_DEPOSIT * simulationVisuals.ppVariables.DATA_TO_AGENTS_RATIO)
-                    simulationVisuals.ppVariables.deposit_attenuation = window.GUI.slider_float('Deposit attn', simulationVisuals.ppVariables.deposit_attenuation, 0.8, 0.999)
-                    simulationVisuals.ppVariables.trace_attenuation = window.GUI.slider_float('Trace attn', simulationVisuals.ppVariables.trace_attenuation, 0.8, 0.999)
-                    simulationVisuals.ppVariables.deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(simulationVisuals.ppVariables.deposit_vis, 10.0), -3.0, 3.0))
-                    simulationVisuals.ppVariables.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(simulationVisuals.ppVariables.trace_vis, 10.0), -3.0, 3.0))
-            
-                    window.GUI.text("Distance distribution:")
-                    if window.GUI.checkbox("Constant", simulationVisuals.ppVariables.distance_sampling_distribution == simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.CONSTANT):
-                        simulationVisuals.ppVariables.distance_sampling_distribution = simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.CONSTANT
-                    if window.GUI.checkbox("Exponential", simulationVisuals.ppVariables.distance_sampling_distribution == simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.EXPONENTIAL):
-                        simulationVisuals.ppVariables.distance_sampling_distribution = simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.EXPONENTIAL
-                    if window.GUI.checkbox("Maxwell-Boltzmann", simulationVisuals.ppVariables.distance_sampling_distribution == simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
-                        simulationVisuals.ppVariables.distance_sampling_distribution = simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
-            
-                    window.GUI.text("Directional distribution:")
-                    if window.GUI.checkbox("Discrete", simulationVisuals.ppVariables.directional_sampling_distribution == simulationVisuals.ppVariables.EnumDirectionalSamplingDistribution.DISCRETE):
-                        simulationVisuals.ppVariables.directional_sampling_distribution = simulationVisuals.ppVariables.EnumDirectionalSamplingDistribution.DISCRETE
-                    if window.GUI.checkbox("Cone", simulationVisuals.ppVariables.directional_sampling_distribution == simulationVisuals.ppVariables.EnumDirectionalSamplingDistribution.CONE):
-                        simulationVisuals.ppVariables.directional_sampling_distribution = simulationVisuals.ppVariables.EnumDirectionalSamplingDistribution.CONE
-            
-                    window.GUI.text("Directional mutation:")
-                    if window.GUI.checkbox("Deterministic", simulationVisuals.ppVariables.directional_mutation_type == simulationVisuals.ppVariables.EnumDirectionalMutationType.DETERMINISTIC):
-                        simulationVisuals.ppVariables.directional_mutation_type = simulationVisuals.ppVariables.EnumDirectionalMutationType.DETERMINISTIC
-                    if window.GUI.checkbox("Stochastic", simulationVisuals.ppVariables.directional_mutation_type == simulationVisuals.ppVariables.EnumDirectionalMutationType.PROBABILISTIC):
-                        simulationVisuals.ppVariables.directional_mutation_type = simulationVisuals.ppVariables.EnumDirectionalMutationType.PROBABILISTIC
-            
-                    window.GUI.text("Deposit fetching:")
-                    if window.GUI.checkbox("Nearest neighbor", simulationVisuals.ppVariables.deposit_fetching_strategy == simulationVisuals.ppVariables.EnumDepositFetchingStrategy.NN):
-                        simulationVisuals.ppVariables.deposit_fetching_strategy = simulationVisuals.ppVariables.EnumDepositFetchingStrategy.NN
-                    if window.GUI.checkbox("Noise-perturbed NN", simulationVisuals.ppVariables.deposit_fetching_strategy == simulationVisuals.ppVariables.EnumDepositFetchingStrategy.NN_PERTURBED):
-                        simulationVisuals.ppVariables.deposit_fetching_strategy = simulationVisuals.ppVariables.EnumDepositFetchingStrategy.NN_PERTURBED
-            
-                    window.GUI.text("Agent boundary handling:")
-                    if window.GUI.checkbox("Wrap around", simulationVisuals.ppVariables.agent_boundary_handling == simulationVisuals.ppVariables.EnumAgentBoundaryHandling.WRAP):
-                        simulationVisuals.ppVariables.agent_boundary_handling = simulationVisuals.ppVariables.EnumAgentBoundaryHandling.WRAP
-                    if window.GUI.checkbox("Reinitialize center", simulationVisuals.ppVariables.agent_boundary_handling == simulationVisuals.ppVariables.EnumAgentBoundaryHandling.REINIT_CENTER):
-                        simulationVisuals.ppVariables.agent_boundary_handling = simulationVisuals.ppVariables.EnumAgentBoundaryHandling.REINIT_CENTER
-                    if window.GUI.checkbox("Reinitialize randomly", simulationVisuals.ppVariables.agent_boundary_handling == simulationVisuals.ppVariables.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
-                        simulationVisuals.ppVariables.agent_boundary_handling = simulationVisuals.ppVariables.EnumAgentBoundaryHandling.REINIT_RANDOMLY
-            
-                    window.GUI.text("Misc controls:")
-                    simulationVisuals.do_simulate = window.GUI.checkbox("Run simulation", simulationVisuals.do_simulate)
-                    do_export = do_export | window.GUI.button('Export fit')
-                    do_screenshot = do_screenshot | window.GUI.button('Screenshot')
-                    do_quit = do_quit | window.GUI.button('Quit')
-                    window.GUI.end()
-            
-                    ## Help window
-                    ## Do not exceed prescribed line length of 120 characters, there is no text wrapping in Taichi GUI for now
-                    window.GUI.begin('Help', 0.35 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[1]))
-                    window.GUI.text("Welcome to PolyPhy 2D GUI variant written by researchers at UCSC/OSPO with the help of numerous external contributors\n(https://github.com/PolyPhyHub). PolyPhy implements MCPM, an agent-based, stochastic, pattern forming algorithm designed\nby Elek et al, inspired by Physarum polycephalum slime mold. Below is a quick reference guide explaining the parameters\nand features available in the interface. The reference as well as other panels can be hidden using the arrow button, moved,\nand rescaled.")
-                    window.GUI.text("")
-                    window.GUI.text("PARAMETERS")
-                    window.GUI.text("Sensing dist: average distance in world units at which agents probe the deposit")
-                    window.GUI.text("Sensing angle: angle in radians within which agents probe deposit (left and right concentric to movement direction)")
-                    window.GUI.text("Sampling expo: sampling sharpness (or 'acuteness' or 'temperature') which tunes the directional mutation behavior")
-                    window.GUI.text("Step size: average size of the step in world units which agents make in each iteration")
-                    window.GUI.text("Data deposit: amount of marker 'deposit' that *data* emit at every iteration")
-                    window.GUI.text("Agent deposit: amount of marker 'deposit' that *agents* emit at every iteration")
-                    window.GUI.text("Deposit attn: attenuation (or 'decay') rate of the diffusing combined agent+data deposit field")
-                    window.GUI.text("Trace attn: attenuation (or 'decay') of the non-diffusing agent trace field")
-                    window.GUI.text("Deposit vis: visualization intensity of the green deposit field (logarithmic)")
-                    window.GUI.text("Trace vis: visualization intensity of the red trace field (logarithmic)")
-                    window.GUI.text("")
-                    window.GUI.text("OPTIONS")
-                    window.GUI.text("Distance distribution: strategy for sampling the sensing and movement distances")
-                    window.GUI.text("Directional distribution: strategy for sampling the sensing and movement directions")
-                    window.GUI.text("Directional mutation: strategy for selecting the new movement direction")
-                    window.GUI.text("Deposit fetching: access behavior when sampling the deposit field")
-                    window.GUI.text("Agent boundary handling: what do agents do if they reach the boundary of the simulation domain")
-                    window.GUI.text("")
-                    window.GUI.text("VISUALIZATION")
-                    window.GUI.text("Renders 2 types of information superimposed on top of each other: *green* deposit field and *red-purple* trace field.")
-                    window.GUI.text("Yellow-white signifies areas where deposit and trace overlap (relative intensities are controlled by the T/D vis params)")
-                    window.GUI.text("Screenshots can be saved in the /capture folder.")
-                    window.GUI.text("")
-                    window.GUI.text("DATA")
-                    window.GUI.text("Input data are loaded from the specified folder in /data. Currently the CSV format is supported.")
-                    window.GUI.text("Reconstruction data are exported to /data/fits using the Export fit button.")
-                    window.GUI.text("")
-                    window.GUI.text("EDITING")
-                    window.GUI.text("New data points can be placed by mouse clicking. This overrides old data on a Round-Robin basis.")
-                    window.GUI.text("Left mouse: discrete mode, place a single data point")
-                    window.GUI.text("Right mouse: continuous mode, place a data point at every iteration")
-                    window.GUI.end()
+                    if not simulationVisuals.hide_UI:
+                        ## Draw main interactive control GUI
+                        window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[0]), 0.74 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[1]))
+                        window.GUI.text("MCPM parameters:")
+                        simulationVisuals.ppVariables.sense_distance = window.GUI.slider_float('Sensing dist', simulationVisuals.ppVariables.sense_distance, 0.1, 0.05 * np.max([simulationVisuals.ppData.DOMAIN_SIZE[0], simulationVisuals.ppData.DOMAIN_SIZE[1]]))
+                        simulationVisuals.ppVariables.sense_angle = window.GUI.slider_float('Sensing angle', simulationVisuals.ppVariables.sense_angle, 0.01, 0.5 * np.pi)
+                        simulationVisuals.ppVariables.sampling_exponent = window.GUI.slider_float('Sampling expo', simulationVisuals.ppVariables.sampling_exponent, 1.0, 10.0)
+                        simulationVisuals.ppVariables.step_size = window.GUI.slider_float('Step size', simulationVisuals.ppVariables.step_size, 0.0, 0.005 * np.max([simulationVisuals.ppData.DOMAIN_SIZE[0], simulationVisuals.ppData.DOMAIN_SIZE[1]]))
+                        simulationVisuals.ppVariables.data_deposit = window.GUI.slider_float('Data deposit', simulationVisuals.ppVariables.data_deposit, 0.0, simulationVisuals.ppVariables.MAX_DEPOSIT)
+                        simulationVisuals.ppVariables.agent_deposit = window.GUI.slider_float('Agent deposit', simulationVisuals.ppVariables.agent_deposit, 0.0, 10.0 * simulationVisuals.ppVariables.MAX_DEPOSIT * simulationVisuals.ppVariables.DATA_TO_AGENTS_RATIO)
+                        simulationVisuals.ppVariables.deposit_attenuation = window.GUI.slider_float('Deposit attn', simulationVisuals.ppVariables.deposit_attenuation, 0.8, 0.999)
+                        simulationVisuals.ppVariables.trace_attenuation = window.GUI.slider_float('Trace attn', simulationVisuals.ppVariables.trace_attenuation, 0.8, 0.999)
+                        simulationVisuals.ppVariables.deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(simulationVisuals.ppVariables.deposit_vis, 10.0), -3.0, 3.0))
+                        simulationVisuals.ppVariables.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(simulationVisuals.ppVariables.trace_vis, 10.0), -3.0, 3.0))
+                
+                        window.GUI.text("Distance distribution:")
+                        if window.GUI.checkbox("Constant", simulationVisuals.ppVariables.distance_sampling_distribution == simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.CONSTANT):
+                            simulationVisuals.ppVariables.distance_sampling_distribution = simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.CONSTANT
+                        if window.GUI.checkbox("Exponential", simulationVisuals.ppVariables.distance_sampling_distribution == simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.EXPONENTIAL):
+                            simulationVisuals.ppVariables.distance_sampling_distribution = simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.EXPONENTIAL
+                        if window.GUI.checkbox("Maxwell-Boltzmann", simulationVisuals.ppVariables.distance_sampling_distribution == simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
+                            simulationVisuals.ppVariables.distance_sampling_distribution = simulationVisuals.ppVariables.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
+                
+                        window.GUI.text("Directional distribution:")
+                        if window.GUI.checkbox("Discrete", simulationVisuals.ppVariables.directional_sampling_distribution == simulationVisuals.ppVariables.EnumDirectionalSamplingDistribution.DISCRETE):
+                            simulationVisuals.ppVariables.directional_sampling_distribution = simulationVisuals.ppVariables.EnumDirectionalSamplingDistribution.DISCRETE
+                        if window.GUI.checkbox("Cone", simulationVisuals.ppVariables.directional_sampling_distribution == simulationVisuals.ppVariables.EnumDirectionalSamplingDistribution.CONE):
+                            simulationVisuals.ppVariables.directional_sampling_distribution = simulationVisuals.ppVariables.EnumDirectionalSamplingDistribution.CONE
+                
+                        window.GUI.text("Directional mutation:")
+                        if window.GUI.checkbox("Deterministic", simulationVisuals.ppVariables.directional_mutation_type == simulationVisuals.ppVariables.EnumDirectionalMutationType.DETERMINISTIC):
+                            simulationVisuals.ppVariables.directional_mutation_type = simulationVisuals.ppVariables.EnumDirectionalMutationType.DETERMINISTIC
+                        if window.GUI.checkbox("Stochastic", simulationVisuals.ppVariables.directional_mutation_type == simulationVisuals.ppVariables.EnumDirectionalMutationType.PROBABILISTIC):
+                            simulationVisuals.ppVariables.directional_mutation_type = simulationVisuals.ppVariables.EnumDirectionalMutationType.PROBABILISTIC
+                
+                        window.GUI.text("Deposit fetching:")
+                        if window.GUI.checkbox("Nearest neighbor", simulationVisuals.ppVariables.deposit_fetching_strategy == simulationVisuals.ppVariables.EnumDepositFetchingStrategy.NN):
+                            simulationVisuals.ppVariables.deposit_fetching_strategy = simulationVisuals.ppVariables.EnumDepositFetchingStrategy.NN
+                        if window.GUI.checkbox("Noise-perturbed NN", simulationVisuals.ppVariables.deposit_fetching_strategy == simulationVisuals.ppVariables.EnumDepositFetchingStrategy.NN_PERTURBED):
+                            simulationVisuals.ppVariables.deposit_fetching_strategy = simulationVisuals.ppVariables.EnumDepositFetchingStrategy.NN_PERTURBED
+                
+                        window.GUI.text("Agent boundary handling:")
+                        if window.GUI.checkbox("Wrap around", simulationVisuals.ppVariables.agent_boundary_handling == simulationVisuals.ppVariables.EnumAgentBoundaryHandling.WRAP):
+                            simulationVisuals.ppVariables.agent_boundary_handling = simulationVisuals.ppVariables.EnumAgentBoundaryHandling.WRAP
+                        if window.GUI.checkbox("Reinitialize center", simulationVisuals.ppVariables.agent_boundary_handling == simulationVisuals.ppVariables.EnumAgentBoundaryHandling.REINIT_CENTER):
+                            simulationVisuals.ppVariables.agent_boundary_handling = simulationVisuals.ppVariables.EnumAgentBoundaryHandling.REINIT_CENTER
+                        if window.GUI.checkbox("Reinitialize randomly", simulationVisuals.ppVariables.agent_boundary_handling == simulationVisuals.ppVariables.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
+                            simulationVisuals.ppVariables.agent_boundary_handling = simulationVisuals.ppVariables.EnumAgentBoundaryHandling.REINIT_RANDOMLY
+                
+                        window.GUI.text("Misc controls:")
+                        simulationVisuals.do_simulate = window.GUI.checkbox("Run simulation", simulationVisuals.do_simulate)
+                        do_export = do_export | window.GUI.button('Export fit')
+                        do_screenshot = do_screenshot | window.GUI.button('Screenshot')
+                        do_quit = do_quit | window.GUI.button('Quit')
+                        window.GUI.end()
+                
+                        ## Help window
+                        ## Do not exceed prescribed line length of 120 characters, there is no text wrapping in Taichi GUI for now
+                        window.GUI.begin('Help', 0.35 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[1]))
+                        window.GUI.text("Welcome to PolyPhy 2D GUI variant written by researchers at UCSC/OSPO with the help of numerous external contributors\n(https://github.com/PolyPhyHub). PolyPhy implements MCPM, an agent-based, stochastic, pattern forming algorithm designed\nby Elek et al, inspired by Physarum polycephalum slime mold. Below is a quick reference guide explaining the parameters\nand features available in the interface. The reference as well as other panels can be hidden using the arrow button, moved,\nand rescaled.")
+                        window.GUI.text("")
+                        window.GUI.text("PARAMETERS")
+                        window.GUI.text("Sensing dist: average distance in world units at which agents probe the deposit")
+                        window.GUI.text("Sensing angle: angle in radians within which agents probe deposit (left and right concentric to movement direction)")
+                        window.GUI.text("Sampling expo: sampling sharpness (or 'acuteness' or 'temperature') which tunes the directional mutation behavior")
+                        window.GUI.text("Step size: average size of the step in world units which agents make in each iteration")
+                        window.GUI.text("Data deposit: amount of marker 'deposit' that *data* emit at every iteration")
+                        window.GUI.text("Agent deposit: amount of marker 'deposit' that *agents* emit at every iteration")
+                        window.GUI.text("Deposit attn: attenuation (or 'decay') rate of the diffusing combined agent+data deposit field")
+                        window.GUI.text("Trace attn: attenuation (or 'decay') of the non-diffusing agent trace field")
+                        window.GUI.text("Deposit vis: visualization intensity of the green deposit field (logarithmic)")
+                        window.GUI.text("Trace vis: visualization intensity of the red trace field (logarithmic)")
+                        window.GUI.text("")
+                        window.GUI.text("OPTIONS")
+                        window.GUI.text("Distance distribution: strategy for sampling the sensing and movement distances")
+                        window.GUI.text("Directional distribution: strategy for sampling the sensing and movement directions")
+                        window.GUI.text("Directional mutation: strategy for selecting the new movement direction")
+                        window.GUI.text("Deposit fetching: access behavior when sampling the deposit field")
+                        window.GUI.text("Agent boundary handling: what do agents do if they reach the boundary of the simulation domain")
+                        window.GUI.text("")
+                        window.GUI.text("VISUALIZATION")
+                        window.GUI.text("Renders 2 types of information superimposed on top of each other: *green* deposit field and *red-purple* trace field.")
+                        window.GUI.text("Yellow-white signifies areas where deposit and trace overlap (relative intensities are controlled by the T/D vis params)")
+                        window.GUI.text("Screenshots can be saved in the /capture folder.")
+                        window.GUI.text("")
+                        window.GUI.text("DATA")
+                        window.GUI.text("Input data are loaded from the specified folder in /data. Currently the CSV format is supported.")
+                        window.GUI.text("Reconstruction data are exported to /data/fits using the Export fit button.")
+                        window.GUI.text("")
+                        window.GUI.text("EDITING")
+                        window.GUI.text("New data points can be placed by mouse clicking. This overrides old data on a Round-Robin basis.")
+                        window.GUI.text("Left mouse: discrete mode, place a single data point")
+                        window.GUI.text("Right mouse: continuous mode, place a data point at every iteration")
+                        window.GUI.end()
             
                 ## Main simulation sequence
                 if simulationVisuals.do_simulate:
@@ -391,17 +403,18 @@ class PolyPhyWindow:
             
                 ## Render visualization
                 k.render_visualization(simulationVisuals.ppVariables.deposit_vis, simulationVisuals.ppVariables.trace_vis, simulationVisuals.current_deposit_index, simulationVisuals.fieldVariables.deposit_field,simulationVisuals.fieldVariables.trace_field, simulationVisuals.fieldVariables.vis_field, simulationVisuals.ppVariables.DEPOSIT_RESOLUTION, simulationVisuals.ppVariables.VIS_RESOLUTION, simulationVisuals.ppVariables.TRACE_RESOLUTION)
-                canvas.set_image(simulationVisuals.fieldVariables.vis_field)
-            
-                if do_screenshot:
-                    window.save_image(simulationVisuals.ppData.ROOT + 'capture/screenshot_' + simulationVisuals.stamp() + '.png') ## Must appear before window.show() call
-                window.show()
+                
+                if batch_mode is False:
+                    canvas.set_image(simulationVisuals.fieldVariables.vis_field)
+                    if do_screenshot:
+                        window.save_image(simulationVisuals.ppData.ROOT + 'capture/screenshot_' + simulationVisuals.stamp() + '.png') ## Must appear before window.show() call
+                    window.show()
                 if do_export:
                     simulationVisuals.store_fit()
                 if do_quit:
                     break
-                
-            window.destroy()
+            if batch_mode is False:    
+                window.destroy()
 
 class PostSimulation:
     def __init__(self, simulationVisuals):
