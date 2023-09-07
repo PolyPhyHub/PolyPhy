@@ -124,7 +124,7 @@ class PPData:
     ## If no input file then generate a random dataset
     
     if len(INPUT_FILE) > 0:
-        data = np.loadtxt(INPUT_FILE, delimiter=",").astype(TypeAliases .FLOAT_CPU)
+        data = np.loadtxt(INPUT_FILE, delimiter=",").astype(TypeAliases.FLOAT_CPU)
         N_DATA = data.shape[0]
         N_AGENTS = PPVariables.N_AGENTS_DEFAULT
         domain_min = (np.min(data[:,0]), np.min(data[:,1]))
@@ -144,7 +144,7 @@ class PPData:
         data[:, 0] = self.rng.normal(loc = DOMAIN_MIN[0] + 0.5 * DOMAIN_MAX[0], scale = 0.13 * DOMAIN_SIZE[0], size = N_DATA)
         data[:, 1] = self.rng.normal(loc = DOMAIN_MIN[1] + 0.5 * DOMAIN_MAX[1], scale = 0.13 * DOMAIN_SIZE[1], size = N_DATA)
         data[:, 2] = AVG_WEIGHT
-
+    
     def __init__(self, rng=default_rng()):
         self.rng = rng  
 

@@ -32,7 +32,7 @@ class Kernels:
         return a - b * ti.floor(a / b)
 
     @ti.kernel
-    def data_step(self,data_field: ti.template(), deposit_field: ti.template(), data_deposit: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU, DOMAIN_MIN: ti.template(), DOMAIN_MAX: ti.template(), DEPOSIT_RESOLUTION: ti.template()):
+    def data_step(self,data_field: ti.template(), deposit_field: ti.template(), data_deposit: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU, DOMAIN_MIN: TypeAliases.VEC2f, DOMAIN_MAX: TypeAliases.VEC2f, DEPOSIT_RESOLUTION: TypeAliases.VEC2i):
         for point in ti.ndrange(data_field.shape[0]):
             pos = TypeAliases.VEC2f(0.0, 0.0)
             pos[0], pos[1], weight = data_field[point]
@@ -56,12 +56,12 @@ class Kernels:
                 agents_field: ti.template(),\
                 deposit_field: ti.template(),\
                 trace_field: ti.template(),\
-                N_DATA: ti.template(),\
-                N_AGENTS: ti.template(),\
+                N_DATA: TypeAliases.FLOAT_GPU,\
+                N_AGENTS: TypeAliases.FLOAT_GPU,\
                 DOMAIN_SIZE: TypeAliases.VEC2f,\
-                DOMAIN_MIN: ti.template(),\
-                DOMAIN_MAX: ti.template(),\
-                DEPOSIT_RESOLUTION: ti.template(),\
+                DOMAIN_MIN: TypeAliases.VEC2f,\
+                DOMAIN_MAX: TypeAliases.VEC2f,\
+                DEPOSIT_RESOLUTION: TypeAliases.VEC2i,\
                 TRACE_RESOLUTION: TypeAliases.VEC2i
                 ):
         for agent in ti.ndrange(agents_field.shape[0]):
@@ -144,7 +144,7 @@ class Kernels:
     DIFFUSION_KERNEL_NORM = DIFFUSION_KERNEL[0] + 4.0 * DIFFUSION_KERNEL[1] + 4.0 * DIFFUSION_KERNEL[2]
 
     @ti.kernel
-    def deposit_relaxation_step(self,attenuation: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU, deposit_field: ti.template(), DEPOSIT_RESOLUTION: ti.template()):
+    def deposit_relaxation_step(self,attenuation: TypeAliases.FLOAT_GPU, current_deposit_index: TypeAliases.INT_GPU, deposit_field: ti.template(), DEPOSIT_RESOLUTION: TypeAliases.VEC2i):
         for cell in ti.grouped(deposit_field):
             ## The "beautiful" expression below implements a 3x3 kernel diffusion with manually wrapped addressing
             ## Taichi doesn't support modulo for tuples so each dimension is handled separately
