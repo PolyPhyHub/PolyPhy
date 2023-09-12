@@ -8,7 +8,11 @@ import matplotlib.pyplot as plt
 import taichi as ti
 import taichi.math as timath
 
-class TypeAliases:
+## TODO: in all classes, make sure __init__ actually only initializes things and doesn't have any functional side effects - any code that does should be in an appropriately named method
+
+class PPTypes:
+    ## TODO (low priority): impletement and test float 16 and 64
+
     FLOAT_CPU = np.float32
     INT_CPU = np.int32
     FLOAT_GPU = ti.f32
@@ -19,31 +23,23 @@ class TypeAliases:
     VEC2f = ti.types.vector(2, FLOAT_GPU)
     VEC3f = ti.types.vector(3, FLOAT_GPU)
 
-    #  TODO: Impletement float 16 and 64
     @staticmethod
     def set_precision(float_precision):
         if float_precision == "float64":
-            TypeAliases.FLOAT_CPU = np.float64
-            TypeAliases.FLOAT_GPU = ti.f64
+            PPTypes.FLOAT_CPU = np.float64
+            PPTypes.FLOAT_GPU = ti.f64
         elif float_precision == "float32":
-            TypeAliases.FLOAT_CPU = np.float32
-            TypeAliases.FLOAT_GPU = ti.f32
+            PPTypes.FLOAT_CPU = np.float32
+            PPTypes.FLOAT_GPU = ti.f32
         elif float_precision == "float16":
-            TypeAliases.FLOAT_CPU = np.float16
-            TypeAliases.FLOAT_GPU = ti.f16
+            PPTypes.FLOAT_CPU = np.float16
+            PPTypes.FLOAT_GPU = ti.f16
         else:
             raise ValueError("Invalid float precision value. Supported values: float64, float32, float16")
 
-class PPVariables:
-    ## Simulation-wide constants
-    N_DATA_DEFAULT = 1000
-    N_AGENTS_DEFAULT = 1000000
-    DOMAIN_SIZE_DEFAULT = (100.0, 100.0)
-    TRACE_RESOLUTION_MAX = 1400
-    DEPOSIT_DOWNSCALING_FACTOR = 1
-    STEERING_RATE = 0.5
-    MAX_DEPOSIT = 10.0
-    DOMAIN_MARGIN = 0.05
+class PPConfig:
+    ## TODO: rename all occurrences to from PPVariables to PPConfig
+    ## TODO: replace STEERING_DATE by steering_rate everywhere
 
     ## Distance sampling distribution for agents
     class EnumDistanceSamplingDistribution(IntEnum):
@@ -79,6 +75,15 @@ class PPVariables:
     deposit_fetching_strategy = EnumDepositFetchingStrategy.NN_PERTURBED
     agent_boundary_handling = EnumAgentBoundaryHandling.WRAP
 
+    ## Simulation-wide constants and defaults
+    N_DATA_DEFAULT = 1000
+    N_AGENTS_DEFAULT = 1000000
+    DOMAIN_SIZE_DEFAULT = (100.0, 100.0)
+    TRACE_RESOLUTION_MAX = 512
+    DEPOSIT_DOWNSCALING_FACTOR = 1
+    MAX_DEPOSIT = 10.0
+    DOMAIN_MARGIN = 0.05
+
     @staticmethod
     def set_value(constant_name, new_value):
         CONSTANT_VARS = ["N_DATA_DEFAULT","N_AGENTS_DEFAULT","DOMAIN_SIZE_DEFAULT"]
@@ -88,21 +93,22 @@ class PPVariables:
             setattr(PPVariables, constant_name, new_value)
         else:
             raise AttributeError(f"'PPVariables' has no attribute '{constant_name}'")
-        
+
     def setter(self, constant_name, new_value):
         if hasattr(self, constant_name):
             setattr(self, constant_name, new_value)
         else:
             raise AttributeError(f"'PPVariables' has no attribute '{constant_name}'")
-        
+
     def __init__(self,ppData):
-        self.DATA_TO_AGENTS_RATIO = TypeAliases.FLOAT_CPU(ppData.N_DATA) / TypeAliases.FLOAT_CPU(ppData.N_AGENTS)
+        self.DATA_TO_AGENTS_RATIO = PPTypes.FLOAT_CPU(ppData.N_DATA) / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]])
-        self.TRACE_RESOLUTION = TypeAliases.INT_CPU((TypeAliases.FLOAT_CPU(PPVariables.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX, TypeAliases.FLOAT_CPU(PPVariables.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX))
+        self.TRACE_RESOLUTION = PPTypes.INT_CPU((PPTypes.FLOAT_CPU(PPVariables.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX, PPTypes.FLOAT_CPU(PPVariables.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX))
         self.DEPOSIT_RESOLUTION = (self.TRACE_RESOLUTION[0] // PPVariables.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[1] // PPVariables.DEPOSIT_DOWNSCALING_FACTOR)
-        self.VIS_RESOLUTION = self.TRACE_RESOLUTION        
+        self.VIS_RESOLUTION = self.TRACE_RESOLUTION
         self.sense_distance = 0.005 * self.DOMAIN_SIZE_MAX
         self.sense_angle = 1.5
+        self.steering_rate = 0.5
         self.step_size = 0.0005 * self.DOMAIN_SIZE_MAX
         self.sampling_exponent = 2.0
         self.deposit_attenuation = 0.9
@@ -112,8 +118,23 @@ class PPVariables:
         self.deposit_vis = 0.1
         self.trace_vis = 1.0
 
+class PPInputData:
+    ## TODO: abstract root class for all data loaders
+    def load_from_file(file):
+        pass
 
-class PPData:
+    ## TODO: if no input file is specified then generate a synthetic test dataset
+    def generate_test_data(rng):
+        pass
+
+    def __init__(self):
+        pass
+
+class PPInputData_2DDiscrete:
+    ## TODO: rename all occurrences from PPData to PPInputData_xxx
+    ## TODO: determine ROOT automatically
+    ## TODO: INPUT_FILE needs to be user-defined (move to constructor)
+
     ## Default root directory
     ROOT = '../../../'
 
@@ -129,11 +150,9 @@ class PPData:
     N_AGENTS = None
     AVG_WEIGHT = 10.0
 
-    ## Load data
-    ## If no input file then generate a random dataset
-    
-    if len(INPUT_FILE) > 0:
-        data = np.loadtxt(INPUT_FILE, delimiter=",").astype(TypeAliases.FLOAT_CPU)
+    def load_from_file(file = 'data/csv/sample_2D_linW.csv'):
+        ## TODO: implement file loader for different file types
+        data = np.loadtxt(INPUT_FILE, delimiter=",").astype(PPTypes.FLOAT_CPU)
         N_DATA = data.shape[0]
         N_AGENTS = PPVariables.N_AGENTS_DEFAULT
         domain_min = (np.min(data[:,0]), np.min(data[:,1]))
@@ -143,26 +162,40 @@ class PPData:
         DOMAIN_MAX = (domain_max[0] + PPVariables.DOMAIN_MARGIN * domain_size[0], domain_max[1] + PPVariables.DOMAIN_MARGIN * domain_size[1])
         DOMAIN_SIZE = np.subtract(DOMAIN_MAX, DOMAIN_MIN)
         AVG_WEIGHT = np.mean(data[:,2])
-    else:
+
+    def generate_test_data(rng):
         N_DATA = PPVariables.N_DATA_DEFAULT
         N_AGENTS = PPVariables.N_AGENTS_DEFAULT
         DOMAIN_SIZE = PPVariables.DOMAIN_SIZE_DEFAULT
         DOMAIN_MIN = (0.0, 0.0)
         DOMAIN_MAX = PPVariables.DOMAIN_SIZE_DEFAULT
-        data = np.zeros(shape=(N_DATA, 3), dtype = TypeAliases.FLOAT_CPU)
+        data = np.zeros(shape=(N_DATA, 3), dtype = PPTypes.FLOAT_CPU)
         data[:, 0] = self.rng.normal(loc = DOMAIN_MIN[0] + 0.5 * DOMAIN_MAX[0], scale = 0.13 * DOMAIN_SIZE[0], size = N_DATA)
         data[:, 1] = self.rng.normal(loc = DOMAIN_MIN[1] + 0.5 * DOMAIN_MAX[1], scale = 0.13 * DOMAIN_SIZE[1], size = N_DATA)
         data[:, 2] = AVG_WEIGHT
     
-    def __init__(self, rng=default_rng()):
+    def __init__(self, input_file, rng=default_rng()):
+        if len(input_file) > 0:
+            load_from_file(input_file)
+            ## TODO: load data from specified file + type
+            ##       else generate synthetic dataset with generate_test_data()
         self.rng = rng  
 
+class PPInternalData:
+    ## TODO: merge class Agents and FieldVariables into this class
+    ## TODO: rename all occurrences accordingly
+    ## TODO: move some of the print() statements from the current Agents.__init__ to PPInputData.__init__ as applicable
+
+    def __init__(self):
+        pass
 
 class Agents:
+    ## TODO: see PPInternalData TODOs
+
     ## Init agents
     def __init__(self,rng,ppVariables,ppData):
         self.rng = rng
-        self.agents = np.zeros(shape=(ppData.N_AGENTS, 4), dtype = TypeAliases.FLOAT_CPU)
+        self.agents = np.zeros(shape=(ppData.N_AGENTS, 4), dtype = PPTypes.FLOAT_CPU)
         self.agents[:, 0] = self.rng.uniform(low = ppData.DOMAIN_MIN[0] + 0.001, high = ppData.DOMAIN_MAX[0] - 0.001, size = ppData.N_AGENTS)
         self.agents[:, 1] = self.rng.uniform(low = ppData.DOMAIN_MIN[1] + 0.001, high = ppData.DOMAIN_MAX[1] - 0.001, size = ppData.N_AGENTS)
         self.agents[:, 2] = self.rng.uniform(low = 0.0, high = 2.0 * np.pi, size = ppData.N_AGENTS)
@@ -179,16 +212,18 @@ class Agents:
         print('Number of data points:', ppData.N_DATA)
 
 class FieldVariables:
+    ## TODO: see PPInternalData TODOs
+
     ## Allocate GPU memory fields
     ## Keep in mind that the dimensions of these fields are important in the subsequent computations;
     ## that means if they change the GPU kernels and the associated handling code must be modified as well
     def __init__(self,ppVariables,ppData):
-        self.data_field = ti.Vector.field(n = 3, dtype = TypeAliases.FLOAT_GPU, shape = ppData.N_DATA)
-        self.agents_field = ti.Vector.field(n = 4, dtype = TypeAliases.FLOAT_GPU, shape = ppData.N_AGENTS)
-        self.deposit_field = ti.Vector.field(n = 2, dtype = TypeAliases.FLOAT_GPU, shape = ppVariables.DEPOSIT_RESOLUTION)
-        self.trace_field = ti.Vector.field(n = 1, dtype = TypeAliases.FLOAT_GPU, shape = ppVariables.TRACE_RESOLUTION)
-        self.vis_field = ti.Vector.field(n = 3, dtype = TypeAliases.FLOAT_GPU, shape = ppVariables.VIS_RESOLUTION)
-        print('Total GPU memory allocated:', TypeAliases .INT_CPU(4 * (\
+        self.data_field = ti.Vector.field(n = 3, dtype = PPTypes.FLOAT_GPU, shape = ppData.N_DATA)
+        self.agents_field = ti.Vector.field(n = 4, dtype = PPTypes.FLOAT_GPU, shape = ppData.N_AGENTS)
+        self.deposit_field = ti.Vector.field(n = 2, dtype = PPTypes.FLOAT_GPU, shape = ppVariables.DEPOSIT_RESOLUTION)
+        self.trace_field = ti.Vector.field(n = 1, dtype = PPTypes.FLOAT_GPU, shape = ppVariables.TRACE_RESOLUTION)
+        self.vis_field = ti.Vector.field(n = 3, dtype = PPTypes.FLOAT_GPU, shape = ppVariables.VIS_RESOLUTION)
+        print('Total GPU memory allocated:', PPTypes.INT_CPU(4 * (\
             self.data_field.shape[0] * 3 + \
             self.agents_field.shape[0] * 4 + \
             self.deposit_field.shape[0] * self.deposit_field.shape[1] * 2 + \
@@ -196,7 +231,16 @@ class FieldVariables:
             self.vis_field.shape[0] * self.vis_field.shape[1] * 3 \
             ) / 2 ** 20), 'MB')
         
-class SimulationVisuals:
+class PPUtils:
+    ## TODO: rename all occurrences from SimulationVisuals to PPUtils
+    ## TODO: rename initGPU() to initInternalData() and move it to PPInternalData
+    ## TODO: move edit_data() to PPInternalData
+    ## TODO: move store_fit() to PPInternalData
+    ## TODO: move aux vars related to PPInternalData into that class (current_deposit_index, data_edit_index)
+    ## TODO: move state vars related to PPSimulation into that class (do_simulate, hide_UI) - they belong the the same category of "state variables" as do_screenshot etc and should be private to the class
+    ## TODO: make PPUtils a static class
+    ## TODO: implement a logging method (instead of print statements) and let user decide whether to log to file or terminal
+
     def initGPU(self,k):
         ## Initialize GPU fields
         self.fieldVariables.data_field.from_numpy(self.ppData.data)
@@ -207,7 +251,7 @@ class SimulationVisuals:
 
     ## Insert a new data point, Round-Robin style, and upload to GPU
     ## This can be very costly for many data points! (eg 10^5 or more)
-    def edit_data(self,edit_index: TypeAliases.INT_CPU, window: ti.ui.Window) -> TypeAliases.INT_CPU:
+    def edit_data(self,edit_index: PPTypes.INT_CPU, window: ti.ui.Window) -> PPTypes.INT_CPU:
         mouse_rel_pos = window.get_cursor_pos()
         mouse_rel_pos = (np.min([np.max([0.001, window.get_cursor_pos()[0]]), 0.999]), np.min([np.max([0.001, window.get_cursor_pos()[1]]), 0.999]))
         mouse_pos = np.add(self.ppData.DOMAIN_MIN, np.multiply(mouse_rel_pos, self.ppData.DOMAIN_SIZE))
@@ -244,7 +288,14 @@ class SimulationVisuals:
         self.do_simulate = True
         self.hide_UI = False
 
-class PolyPhyWindow:
+class PPSimulation:
+    ## TODO: rename all occurrences of PolyPhyWindow to PPSimulation
+    ## TODO: move all the GUI rendering to a separate member function __drawGUI() to separate it from the core separation code
+    ## TODO: rename kernels instance from "k" to "kernels"
+
+    def __drawGUI():
+        pass
+
     def __init__(self, k, simulationVisuals, batch_mode=False, num_iterations=-1):
         ## check if file exists
         if os.path.exists("/tmp/flag") == False:
@@ -278,7 +329,7 @@ class PolyPhyWindow:
                 
                     if not simulationVisuals.hide_UI:
                         ## Draw main interactive control GUI
-                        window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[0]), 0.74 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[1]))
+                        window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / PPTypes.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[0]), 0.74 * 1024.0 / PPTypes.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[1]))
                         window.GUI.text("MCPM parameters:")
                         simulationVisuals.ppVariables.sense_distance = window.GUI.slider_float('Sensing dist', simulationVisuals.ppVariables.sense_distance, 0.1, 0.05 * np.max([simulationVisuals.ppData.DOMAIN_SIZE[0], simulationVisuals.ppData.DOMAIN_SIZE[1]]))
                         simulationVisuals.ppVariables.sense_angle = window.GUI.slider_float('Sensing angle', simulationVisuals.ppVariables.sense_angle, 0.01, 0.5 * np.pi)
@@ -334,7 +385,7 @@ class PolyPhyWindow:
                 
                         ## Help window
                         ## Do not exceed prescribed line length of 120 characters, there is no text wrapping in Taichi GUI for now
-                        window.GUI.begin('Help', 0.35 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / TypeAliases.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[1]))
+                        window.GUI.begin('Help', 0.35 * 1024.0 / PPTypes.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / PPTypes.FLOAT_CPU(simulationVisuals.ppVariables.VIS_RESOLUTION[1]))
                         window.GUI.text("Welcome to PolyPhy 2D GUI variant written by researchers at UCSC/OSPO with the help of numerous external contributors\n(https://github.com/PolyPhyHub). PolyPhy implements MCPM, an agent-based, stochastic, pattern forming algorithm designed\nby Elek et al, inspired by Physarum polycephalum slime mold. Below is a quick reference guide explaining the parameters\nand features available in the interface. The reference as well as other panels can be hidden using the arrow button, moved,\nand rescaled.")
                         window.GUI.text("")
                         window.GUI.text("PARAMETERS")
@@ -416,27 +467,9 @@ class PolyPhyWindow:
             if batch_mode is False:    
                 window.destroy()
 
-class PostSimulation:
+class PPPostSimulation:
+    ## TODO: rename PostSimulation to PPPostSimulation everywhere
+
     def __init__(self, simulationVisuals):
-        ## Store fits
-        current_stamp = simulationVisuals.stamp()
-        deposit = simulationVisuals.fieldVariables.deposit_field.to_numpy()
-        np.save(simulationVisuals.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
-        trace = simulationVisuals.fieldVariables.trace_field.to_numpy()
-        np.save(simulationVisuals.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
+        simulationVisuals.store_fit()
 
-        ## Plot results
-        ## Compare with stored fields
-        current_stamp, deposit, trace = simulationVisuals.store_fit()
-
-        plt.figure(figsize = (10.0, 10.0))
-        plt.imshow(np.flip(np.transpose(deposit[:,:,0]), axis=0))
-        plt.figure(figsize = (10.0, 10.0))
-        deposit_restored = np.load(simulationVisuals.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy')
-        plt.imshow(np.flip(np.transpose(deposit_restored[:,:,0]), axis=0))
-
-        plt.figure(figsize = (10.0, 10.0))
-        plt.imshow(np.flip(np.transpose(trace[:,:,0]), axis=0))
-        plt.figure(figsize = (10.0, 10.0))
-        trace_restored = np.load(simulationVisuals.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy')
-        plt.imshow(np.flip(np.transpose(trace_restored[:,:,0]), axis=0))
