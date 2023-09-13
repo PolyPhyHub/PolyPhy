@@ -1,4 +1,4 @@
-from polyphy_functions import PPSimulation, PPPostSimulation, PPUtils, PPInternalData, PPConfig, PPInputData_2DDiscrete
+from polyphy_functions import PPSimulation, PPPostSimulation, PPInternalData, PPConfig, PPInputData_2DDiscrete
 from kernels import Kernels
 import argparse
 from numpy.random import default_rng

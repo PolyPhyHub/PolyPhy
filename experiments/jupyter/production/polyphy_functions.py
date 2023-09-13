@@ -10,7 +10,6 @@ import taichi.math as timath
 import zope.interface
 import logging
 
- ## TODO: implement a logging method (instead of print statements) and let user decide whether to log to file or terminal
 class PPTypes:
     ## TODO (low priority): impletement and test float 16 and 64
 
@@ -77,7 +76,7 @@ class PPConfig:
     N_DATA_DEFAULT = 1000
     N_AGENTS_DEFAULT = 1000000
     DOMAIN_SIZE_DEFAULT = (100.0, 100.0)
-    TRACE_RESOLUTION_MAX = 512
+    TRACE_RESOLUTION_MAX = 1400
     DEPOSIT_DOWNSCALING_FACTOR = 1
     MAX_DEPOSIT = 10.0
     DOMAIN_MARGIN = 0.05
@@ -132,7 +131,7 @@ class PPInputData(zope.interface.Interface):
 class PPInputData_2DDiscrete:
     ## TODO: determine ROOT automatically
     ROOT = '../../../'
-    def load_from_file(self,file = 'data/csv/sample_2D_linW.csv'):
+    def load_from_file(self,file):
         ## TODO: implement file loader for different file types
         self.data = np.loadtxt('../../../' + file, delimiter=",").astype(PPTypes.FLOAT_CPU)
         self.N_DATA = self.data.shape[0]
