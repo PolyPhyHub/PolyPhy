@@ -15,10 +15,10 @@ class PolyPhy:
         self.num_iterations = -1
         self.parse_values()
         self.kernels = Kernels()
-        self.ppInternalData = PPInternalData(self.rng,self.kernels,self.ppConfig,self.ppInputData)
+        self.ppInternalData = PPInternalData(self.rng,self.kernels,self.ppConfig)
 
     def start_simulation(self):
-        PPSimulation(self.kernels,self.ppInternalData,self.ppConfig,self.ppInputData,self.batch_mode,self.num_iterations)
+        PPSimulation(self.ppInternalData,self.batch_mode,self.num_iterations)
         PPPostSimulation(self.ppInternalData)
 
     def parse_args(self):

@@ -32,7 +32,7 @@ class Kernels:
         return a - b * ti.floor(a / b)
 
     @ti.kernel
-    def data_step(self,data_field: ti.template(), deposit_field: ti.template(), data_deposit: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DOMAIN_MIN: PPTypes.VEC2f, DOMAIN_MAX: PPTypes.VEC2f, DEPOSIT_RESOLUTION: PPTypes.VEC2i):
+    def data_step(self, data_deposit: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DOMAIN_MIN: PPTypes.VEC2f, DOMAIN_MAX: PPTypes.VEC2f, DEPOSIT_RESOLUTION: PPTypes.VEC2i, data_field: ti.template(), deposit_field: ti.template()):
         for point in ti.ndrange(data_field.shape[0]):
             pos = PPTypes.VEC2f(0.0, 0.0)
             pos[0], pos[1], weight = data_field[point]

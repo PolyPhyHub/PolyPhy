@@ -115,6 +115,7 @@ class PPConfig:
         self.agent_deposit = self.data_deposit * self.DATA_TO_AGENTS_RATIO
         self.deposit_vis = 0.1
         self.trace_vis = 1.0
+        self.ppData = ppData
         PPUtils.logToStdOut('info','Trace grid resolution:', self.TRACE_RESOLUTION)
         PPUtils.logToStdOut('info','Deposit grid resolution:', self.DEPOSIT_RESOLUTION)
 
@@ -182,7 +183,7 @@ class PPInputData_2DDiscrete:
 class PPInternalData:    
     def initInternalData(self,kernels):
         ## Initialize GPU fields
-        self.data_field.from_numpy(self.ppData.data)
+        self.data_field.from_numpy(self.ppConfig.ppData.data)
         self.agents_field.from_numpy(self.agents)
         kernels.zero_field(self.deposit_field)
         kernels.zero_field(self.trace_field)
@@ -192,33 +193,33 @@ class PPInternalData:
     ## This can be very costly for many data points! (eg 10^5 or more)
     def edit_data(self,edit_index: PPTypes.INT_CPU, window: ti.ui.Window) -> PPTypes.INT_CPU:
         mouse_rel_pos = (np.min([np.max([0.001, window.get_cursor_pos()[0]]), 0.999]), np.min([np.max([0.001, window.get_cursor_pos()[1]]), 0.999]))
-        mouse_pos = np.add(self.ppData.DOMAIN_MIN, np.multiply(mouse_rel_pos, self.ppData.DOMAIN_SIZE))
-        self.ppData.data[edit_index, :] = mouse_pos[0], mouse_pos[1], self.ppData.AVG_WEIGHT
-        self.data_field.from_numpy(self.ppData.data)
-        edit_index = (edit_index + 1) % self.ppData.N_DATA
+        mouse_pos = np.add(self.ppConfig.ppData.DOMAIN_MIN, np.multiply(mouse_rel_pos, self.ppConfig.ppData.DOMAIN_SIZE))
+        self.ppConfig.ppData.data[edit_index, :] = mouse_pos[0], mouse_pos[1], self.ppConfig.ppData.AVG_WEIGHT
+        self.data_field.from_numpy(self.ppConfig.ppData.data)
+        edit_index = (edit_index + 1) % self.ppConfig.ppData.N_DATA
         return edit_index
     
     ## Store current deposit and trace fields
     def store_fit(self):
-        if not os.path.exists(self.ppData.ROOT + "data/fits/"):
-            os.makedirs(self.ppData.ROOT + "data/fits/")
+        if not os.path.exists(self.ppConfig.ppData.ROOT + "data/fits/"):
+            os.makedirs(self.ppConfig.ppData.ROOT + "data/fits/")
         current_stamp = PPUtils.stamp()
         deposit = self.deposit_field.to_numpy()
-        np.save(self.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
+        np.save(self.ppConfig.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
         trace = self.trace_field.to_numpy()
-        np.save(self.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
+        np.save(self.ppConfig.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
         return current_stamp, deposit, trace
     
-    def __init__(self,rng,kernels,ppConfig,ppData):
-        self.agents = np.zeros(shape=(ppData.N_AGENTS, 4), dtype = PPTypes.FLOAT_CPU)
-        self.agents[:, 0] = rng.uniform(low = ppData.DOMAIN_MIN[0] + 0.001, high = ppData.DOMAIN_MAX[0] - 0.001, size = ppData.N_AGENTS)
-        self.agents[:, 1] = rng.uniform(low = ppData.DOMAIN_MIN[1] + 0.001, high = ppData.DOMAIN_MAX[1] - 0.001, size = ppData.N_AGENTS)
-        self.agents[:, 2] = rng.uniform(low = 0.0, high = 2.0 * np.pi, size = ppData.N_AGENTS)
+    def __init__(self,rng,kernels,ppConfig):
+        self.agents = np.zeros(shape=(ppConfig.ppData.N_AGENTS, 4), dtype = PPTypes.FLOAT_CPU)
+        self.agents[:, 0] = rng.uniform(low = ppConfig.ppData.DOMAIN_MIN[0] + 0.001, high = ppConfig.ppData.DOMAIN_MAX[0] - 0.001, size = ppConfig.ppData.N_AGENTS)
+        self.agents[:, 1] = rng.uniform(low = ppConfig.ppData.DOMAIN_MIN[1] + 0.001, high = ppConfig.ppData.DOMAIN_MAX[1] - 0.001, size = ppConfig.ppData.N_AGENTS)
+        self.agents[:, 2] = rng.uniform(low = 0.0, high = 2.0 * np.pi, size = ppConfig.ppData.N_AGENTS)
         self.agents[:, 3] = 1.0
         PPUtils.logToStdOut("info",'Agent sample:', self.agents[0, :])
 
-        self.data_field = ti.Vector.field(n = 3, dtype = PPTypes.FLOAT_GPU, shape = ppData.N_DATA)
-        self.agents_field = ti.Vector.field(n = 4, dtype = PPTypes.FLOAT_GPU, shape = ppData.N_AGENTS)
+        self.data_field = ti.Vector.field(n = 3, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.ppData.N_DATA)
+        self.agents_field = ti.Vector.field(n = 4, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.ppData.N_AGENTS)
         self.deposit_field = ti.Vector.field(n = 2, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.DEPOSIT_RESOLUTION)
         self.trace_field = ti.Vector.field(n = 1, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.TRACE_RESOLUTION)
         self.vis_field = ti.Vector.field(n = 3, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.VIS_RESOLUTION)
@@ -230,7 +231,8 @@ class PPInternalData:
             self.vis_field.shape[0] * self.vis_field.shape[1] * 3 \
             ) / 2 ** 20), 'MB')
         
-        self.ppData = ppData
+        self.ppConfig = ppConfig
+        self.kernels = kernels
         self.initInternalData(kernels)
 
 class PPUtils:
@@ -381,7 +383,7 @@ class PPSimulation:
         window.GUI.text("Right mouse: continuous mode, place a data point at every iteration")
         window.GUI.end()
 
-    def __init__(self, kernels, ppInternalData, ppConfig, ppData, batch_mode=False, num_iterations=-1):
+    def __init__(self, ppInternalData, batch_mode=False, num_iterations=-1):
         self.current_deposit_index = 0
         self.data_edit_index = 0
 
@@ -418,45 +420,45 @@ class PPSimulation:
                         self.data_edit_index = ppInternalData.edit_data(self.data_edit_index,window)
                 
                     if not self.hide_UI:
-                        self.__drawGUI__(window,ppConfig,ppData)
+                        self.__drawGUI__(window,ppInternalData.ppConfig,ppInternalData.ppConfig.ppData)
             
                 ## Main simulation sequence
                 if self.do_simulate:
-                    kernels.data_step(ppInternalData.data_field, ppInternalData.deposit_field,ppConfig.data_deposit, self.current_deposit_index, ppData.DOMAIN_MIN, ppData.DOMAIN_MAX, ppConfig.DEPOSIT_RESOLUTION)
-                    kernels.agent_step(ppConfig.sense_distance,\
-                        ppConfig.sense_angle,\
-                        ppConfig.steering_rate,\
-                        ppConfig.sampling_exponent,\
-                        ppConfig.step_size,\
-                        ppConfig.agent_deposit,\
+                    ppInternalData.kernels.data_step(ppInternalData.ppConfig.data_deposit, self.current_deposit_index, ppInternalData.ppConfig.ppData.DOMAIN_MIN, ppInternalData.ppConfig.ppData.DOMAIN_MAX, ppInternalData.ppConfig.DEPOSIT_RESOLUTION,ppInternalData.data_field, ppInternalData.deposit_field)
+                    ppInternalData.kernels.agent_step(ppInternalData.ppConfig.sense_distance,\
+                        ppInternalData.ppConfig.sense_angle,\
+                        ppInternalData.ppConfig.steering_rate,\
+                        ppInternalData.ppConfig.sampling_exponent,\
+                        ppInternalData.ppConfig.step_size,\
+                        ppInternalData.ppConfig.agent_deposit,\
                         self.current_deposit_index,\
-                        ppConfig.distance_sampling_distribution,\
-                        ppConfig.directional_sampling_distribution,\
-                        ppConfig.directional_mutation_type,\
-                        ppConfig.deposit_fetching_strategy,\
-                        ppConfig.agent_boundary_handling,\
-                        ppData.N_DATA,\
-                        ppData.N_AGENTS,\
-                        ppData.DOMAIN_SIZE,\
-                        ppData.DOMAIN_MIN,\
-                        ppData.DOMAIN_MAX,\
-                        ppConfig.DEPOSIT_RESOLUTION,\
-                        ppConfig.TRACE_RESOLUTION,\
+                        ppInternalData.ppConfig.distance_sampling_distribution,\
+                        ppInternalData.ppConfig.directional_sampling_distribution,\
+                        ppInternalData.ppConfig.directional_mutation_type,\
+                        ppInternalData.ppConfig.deposit_fetching_strategy,\
+                        ppInternalData.ppConfig.agent_boundary_handling,\
+                        ppInternalData.ppConfig.ppData.N_DATA,\
+                        ppInternalData.ppConfig.ppData.N_AGENTS,\
+                        ppInternalData.ppConfig.ppData.DOMAIN_SIZE,\
+                        ppInternalData.ppConfig.ppData.DOMAIN_MIN,\
+                        ppInternalData.ppConfig.ppData.DOMAIN_MAX,\
+                        ppInternalData.ppConfig.DEPOSIT_RESOLUTION,\
+                        ppInternalData.ppConfig.TRACE_RESOLUTION,\
                         ppInternalData.agents_field,\
                         ppInternalData.deposit_field,\
                         ppInternalData.trace_field
                         )
-                    kernels.deposit_relaxation_step(ppConfig.deposit_attenuation, self.current_deposit_index,ppConfig.DEPOSIT_RESOLUTION,ppInternalData.deposit_field)
-                    kernels.trace_relaxation_step(ppConfig.trace_attenuation, ppInternalData.trace_field)
+                    ppInternalData.kernels.deposit_relaxation_step(ppInternalData.ppConfig.deposit_attenuation, self.current_deposit_index,ppInternalData.ppConfig.DEPOSIT_RESOLUTION,ppInternalData.deposit_field)
+                    ppInternalData.kernels.trace_relaxation_step(ppInternalData.ppConfig.trace_attenuation, ppInternalData.trace_field)
                     self.current_deposit_index = 1 - self.current_deposit_index
             
                 ## Render visualization
-                kernels.render_visualization(ppConfig.deposit_vis, ppConfig.trace_vis, self.current_deposit_index, ppConfig.DEPOSIT_RESOLUTION, ppConfig.VIS_RESOLUTION, ppConfig.TRACE_RESOLUTION, ppInternalData.deposit_field,ppInternalData.trace_field, ppInternalData.vis_field)
+                ppInternalData.kernels.render_visualization(ppInternalData.ppConfig.deposit_vis, ppInternalData.ppConfig.trace_vis, self.current_deposit_index, ppInternalData.ppConfig.DEPOSIT_RESOLUTION, ppInternalData.ppConfig.VIS_RESOLUTION, ppInternalData.ppConfig.TRACE_RESOLUTION, ppInternalData.deposit_field,ppInternalData.trace_field, ppInternalData.vis_field)
                 
                 if batch_mode is False:
                     canvas.set_image(ppInternalData.vis_field)
                     if self.do_screenshot:
-                        window.save_image(ppData.ROOT + 'capture/screenshot_' + PPUtils.stamp() + '.png') ## Must appear before window.show() call
+                        window.save_image(ppInternalData.ppConfig.ppData.ROOT + 'capture/screenshot_' + PPUtils.stamp() + '.png') ## Must appear before window.show() call
                     window.show()
                 if self.do_export:
                     ppInternalData.store_fit()
