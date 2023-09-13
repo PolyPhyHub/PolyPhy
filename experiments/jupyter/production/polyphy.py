@@ -1,4 +1,4 @@
-from polyphy_functions import PolyPhyWindow, PostSimulation, SimulationVisuals, FieldVariables, Agents, TypeAliases, PPVariables, PPData
+from polyphy_functions import PPSimulation, PPPostSimulation, PPUtils, PPInternalData, PPConfig, PPInputData_2DDiscrete
 from kernels import Kernels
 import argparse
 from numpy.random import default_rng
@@ -9,19 +9,17 @@ class PolyPhy:
         self.parse_args()
         ti.init(arch=ti.cpu)
         self.rng = default_rng()
-        self.ppData = PPData()
-        self.ppVariables = PPVariables(self.ppData)
+        self.ppInputData = PPInputData_2DDiscrete('data/csv/sample_2D_linW.csv',self.rng)
+        self.ppConfig = PPConfig(self.ppInputData)
         self.batch_mode = False
         self.num_iterations = -1
         self.parse_values()
-        self.agents = Agents(self.rng,self.ppVariables,self.ppData)
-        self.fieldVariables = FieldVariables(self.ppVariables,self.ppData)
-        self.k = Kernels()
-        self.simulationVisuals = SimulationVisuals(self.k,self.ppVariables,self.ppData,self.agents,self.fieldVariables)
+        self.kernels = Kernels()
+        self.ppInternalData = PPInternalData(self.rng,self.kernels,self.ppConfig,self.ppInputData)
 
     def start_simulation(self):
-        PolyPhyWindow(self.k,self.simulationVisuals,self.batch_mode,self.num_iterations)
-        PostSimulation(self.simulationVisuals)
+        PPSimulation(self.kernels,self.ppInternalData,self.ppConfig,self.ppInputData,self.batch_mode,self.num_iterations)
+        PPPostSimulation(self.ppInternalData)
 
     def parse_args(self):
         parser = argparse.ArgumentParser(description="PolyPhy")
@@ -61,53 +59,53 @@ class PolyPhy:
         if self.args.num_iterations and not self.args.batch_mode:
             raise AssertionError("Please set to batch mode")
         if self.args.sensing_dist:
-            self.ppVariables.setter("sense_distance",self.args.sensing_dist)
+            self.ppConfig.setter("sense_distance",self.args.sensing_dist)
         if self.args.sensing_angle:
-            self.ppVariables.setter("sense_angle",self.args.sensing_angle)
+            self.ppConfig.setter("sense_angle",self.args.sensing_angle)
         if self.args.sampling_expo:
-            self.ppVariables.setter("sampling_exponent",self.args.sampling_expo)
+            self.ppConfig.setter("sampling_exponent",self.args.sampling_expo)
         if self.args.step_size:
-            self.ppVariables.setter("step_size",self.args.step_size)
+            self.ppConfig.setter("step_size",self.args.step_size)
         if self.args.data_deposit:
-            self.ppVariables.setter("data_deposit",self.args.data_deposit)
+            self.ppConfig.setter("data_deposit",self.args.data_deposit)
         if self.args.agent_deposit:
-            self.ppVariables.setter("agent_deposit",self.args.agent_deposit)
+            self.ppConfig.setter("agent_deposit",self.args.agent_deposit)
         if self.args.deposit_attenuation:
-            self.ppVariables.setter("deposit_attenuation",self.args.deposit_attenuation)
+            self.ppConfig.setter("deposit_attenuation",self.args.deposit_attenuation)
         if self.args.trace_attenuation:
-            self.ppVariables.setter("trace_attenuation",self.args.trace_attenuation)
+            self.ppConfig.setter("trace_attenuation",self.args.trace_attenuation)
         if self.args.deposit_visualization:
-            self.ppVariables.setter("deposit_vis",self.args.deposit_visualization)
+            self.ppConfig.setter("deposit_vis",self.args.deposit_visualization)
         if self.args.trace_visualization:
-            self.ppVariables.setter("trace_vis",self.args.trace_visualization)
+            self.ppConfig.setter("trace_vis",self.args.trace_visualization)
         if self.args.distance_distribution:
             if self.args.distance_distribution == "constant":
-                self.ppVariables.setter("distance_sampling_distribution",PPVariables.EnumDistanceSamplingDistribution.CONSTANT)
+                self.ppConfig.setter("distance_sampling_distribution",PPConfig.EnumDistanceSamplingDistribution.CONSTANT)
             elif self.args.distance_distribution == "exponential":
-                self.ppVariables.setter("distance_sampling_distribution",PPVariables.EnumDistanceSamplingDistribution.EXPONENTIAL)
+                self.ppConfig.setter("distance_sampling_distribution",PPConfig.EnumDistanceSamplingDistribution.EXPONENTIAL)
             elif self.args.distance_distribution == "maxwell-boltzmann":
-                self.ppVariables.setter("distance_sampling_distribution",PPVariables.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN)           
+                self.ppConfig.setter("distance_sampling_distribution",PPConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN)           
         if self.args.directional_distribution:
             if self.args.directional_distribution == "discrete":
-                self.ppVariables.setter("directional_sampling_distribution",PPVariables.EnumDirectionalSamplingDistribution.DISCRETE)
+                self.ppConfig.setter("directional_sampling_distribution",PPConfig.EnumDirectionalSamplingDistribution.DISCRETE)
             elif self.args.directional_distribution == "cone":
-                self.ppVariables.setter("directional_sampling_distribution",PPVariables.EnumDirectionalSamplingDistribution.CONE)
+                self.ppConfig.setter("directional_sampling_distribution",PPConfig.EnumDirectionalSamplingDistribution.CONE)
         if self.args.directional_mutation:
             if self.args.directional_mutation == "deterministic":
-                self.ppVariables.setter("directional_mutation_type",PPVariables.EnumDirectionalMutationType.DETERMINISTIC)
+                self.ppConfig.setter("directional_mutation_type",PPConfig.EnumDirectionalMutationType.DETERMINISTIC)
             elif self.args.directional_mutation == "stochastic":
-                self.ppVariables.setter("directional_mutation_type",PPVariables.EnumDirectionalMutationType.PROBABILISTIC)
+                self.ppConfig.setter("directional_mutation_type",PPConfig.EnumDirectionalMutationType.PROBABILISTIC)
         if self.args.deposit_fetching:
             if self.args.deposit_fetching == "nearest-neighbor":
-                self.ppVariables.setter("deposit_fetching_strategy",PPVariables.EnumDepositFetchingStrategy.NN)
+                self.ppConfig.setter("deposit_fetching_strategy",PPConfig.EnumDepositFetchingStrategy.NN)
             elif self.args.deposit_fetching == "noise-perturbed-NN":
-                self.ppVariables.setter("deposit_fetching_strategy",PPVariables.EnumDepositFetchingStrategy.NN_PERTURBED)
+                self.ppConfig.setter("deposit_fetching_strategy",PPConfig.EnumDepositFetchingStrategy.NN_PERTURBED)
         if self.args.agent_boundary_handling:
             if self.args.agent_boundary_handling == "wrap-around":
-                self.ppVariables.setter("agent_boundary_handling",PPVariables.EnumAgentBoundaryHandling.WRAP)
+                self.ppConfig.setter("agent_boundary_handling",PPConfig.EnumAgentBoundaryHandling.WRAP)
             elif self.args.agent_boundary_handling == "re-initialize-center":
-                self.ppVariables.setter("agent_boundary_handling",PPVariables.EnumAgentBoundaryHandling.REINIT_CENTER)
+                self.ppConfig.setter("agent_boundary_handling",PPConfig.EnumAgentBoundaryHandling.REINIT_CENTER)
             elif self.args.agent_boundary_handling == "re-initialize-randomly":
-                self.ppVariables.setter("agent_boundary_handling",PPVariables.EnumAgentBoundaryHandling.REINIT_RANDOMLY)
+                self.ppConfig.setter("agent_boundary_handling",PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY)
 
 PolyPhy().start_simulation()

@@ -1,6 +1,6 @@
 import taichi as ti
 import taichi.math as timath
-from polyphy_functions import PPTypes, PPVariables
+from polyphy_functions import PPTypes, PPConfig
 
 @ti.data_oriented
 class Kernels:
@@ -40,8 +40,6 @@ class Kernels:
             deposit_field[deposit_cell][current_deposit_index] += data_deposit * weight
         return
 
-    ## TODO: all the field parameters should be at the end of the list (also in all other kernels please)
-    ## TODO: the strategy params (distance_sampling_distribution etc) should be arguments to the kernel, not read from PPVariables
     @ti.kernel
     def agent_step(self,sense_distance: PPTypes.FLOAT_GPU,\
                 sense_angle: PPTypes.FLOAT_GPU,\
@@ -55,16 +53,16 @@ class Kernels:
                 directional_mutation_type: PPTypes.INT_GPU,\
                 deposit_fetching_strategy: PPTypes.INT_GPU,\
                 agent_boundary_handling: PPTypes.INT_GPU,
-                agents_field: ti.template(),\
-                deposit_field: ti.template(),\
-                trace_field: ti.template(),\
                 N_DATA: PPTypes.FLOAT_GPU,\
                 N_AGENTS: PPTypes.FLOAT_GPU,\
                 DOMAIN_SIZE: PPTypes.VEC2f,\
                 DOMAIN_MIN: PPTypes.VEC2f,\
                 DOMAIN_MAX: PPTypes.VEC2f,\
                 DEPOSIT_RESOLUTION: PPTypes.VEC2i,\
-                TRACE_RESOLUTION: PPTypes.VEC2i
+                TRACE_RESOLUTION: PPTypes.VEC2i,\
+                agents_field: ti.template(),\
+                deposit_field: ti.template(),\
+                trace_field: ti.template()
                 ):
         for agent in ti.ndrange(agents_field.shape[0]):
             pos = PPTypes.VEC2f(0.0, 0.0)
@@ -73,19 +71,19 @@ class Kernels:
             ## Generate new mutated angle by perturbing the original
             dir_fwd = self.angle_to_dir_2D(angle)
             angle_mut = angle
-            if PPVariables.directional_sampling_distribution == PPVariables.EnumDirectionalSamplingDistribution.DISCRETE:
+            if directional_sampling_distribution == PPConfig.EnumDirectionalSamplingDistribution.DISCRETE:
                 angle_mut += (1.0 if ti.random(dtype=PPTypes.FLOAT_GPU) > 0.5 else -1.0) * sense_angle
-            elif PPVariables.directional_sampling_distribution == PPVariables.EnumDirectionalSamplingDistribution.CONE:
+            elif directional_sampling_distribution == PPConfig.EnumDirectionalSamplingDistribution.CONE:
                 angle_mut += 2.0 * (ti.random(dtype=PPTypes.FLOAT_GPU) - 0.5) * sense_angle
             dir_mut = self.angle_to_dir_2D(angle_mut)
 
             ## Generate sensing distance for the agent, constant or probabilistic
             agent_sensing_distance = sense_distance
             distance_scaling_factor = 1.0
-            if PPVariables.distance_sampling_distribution == PPVariables.EnumDistanceSamplingDistribution.EXPONENTIAL:
+            if distance_sampling_distribution == PPConfig.EnumDistanceSamplingDistribution.EXPONENTIAL:
                 xi = timath.clamp(ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999) ## log & pow are unstable in extremes
                 distance_scaling_factor = -ti.log(xi)
-            elif PPVariables.distance_sampling_distribution == PPVariables.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN:
+            elif distance_sampling_distribution == PPConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN:
                 xi = timath.clamp(ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999) ## log & pow are unstable in extremes
                 distance_scaling_factor = -0.3033 * ti.log( (ti.pow(xi + 0.005, -0.4) - 0.9974) / 7.326 )
             agent_sensing_distance *= distance_scaling_factor
@@ -93,10 +91,10 @@ class Kernels:
             ## Fetch deposit to guide the agent
             deposit_fwd = 1.0
             deposit_mut = 0.0
-            if PPVariables.deposit_fetching_strategy == PPVariables.EnumDepositFetchingStrategy.NN:
+            if deposit_fetching_strategy == PPConfig.EnumDepositFetchingStrategy.NN:
                 deposit_fwd = deposit_field[self.world_to_grid_2D(pos + agent_sensing_distance * dir_fwd, PPTypes.VEC2f(DOMAIN_MIN), PPTypes.VEC2f(DOMAIN_MAX), PPTypes.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
                 deposit_mut = deposit_field[self.world_to_grid_2D(pos + agent_sensing_distance * dir_mut, PPTypes.VEC2f(DOMAIN_MIN), PPTypes.VEC2f(DOMAIN_MAX), PPTypes.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
-            elif PPVariables.deposit_fetching_strategy == PPVariables.EnumDepositFetchingStrategy.NN_PERTURBED:
+            elif deposit_fetching_strategy == PPConfig.EnumDepositFetchingStrategy.NN_PERTURBED:
                 ## Fetches the deposit by perturbing the original position by a small delta
                 ## This provides cheap stochastic filtering instead of multi-fetch filters
                 field_dd = 2.0 * ti.cast(DOMAIN_SIZE[0], PPTypes.FLOAT_GPU) / ti.cast(DEPOSIT_RESOLUTION[0], PPTypes.FLOAT_GPU)
@@ -107,9 +105,9 @@ class Kernels:
 
             ## Generate new direction for the agent based on the sampled deposit
             angle_new = angle
-            if PPVariables.directional_mutation_type == PPVariables.EnumDirectionalMutationType.DETERMINISTIC:
+            if directional_mutation_type == PPConfig.EnumDirectionalMutationType.DETERMINISTIC:
                 angle_new = (STEERING_RATE * angle_mut + (1.0-STEERING_RATE) * angle) if (deposit_mut > deposit_fwd) else (angle)
-            elif PPVariables.directional_mutation_type == PPVariables.EnumDirectionalMutationType.PROBABILISTIC:
+            elif directional_mutation_type == PPConfig.EnumDirectionalMutationType.PROBABILISTIC:
                 p_remain = ti.pow(deposit_fwd, sampling_exponent)
                 p_mutate = ti.pow(deposit_mut, sampling_exponent)
                 mutation_probability = p_mutate / (p_remain + p_mutate)
@@ -118,14 +116,14 @@ class Kernels:
             pos_new = pos + step_size * distance_scaling_factor * dir_new
 
             ## Agent behavior at domain boundaries
-            if PPVariables.agent_boundary_handling == PPVariables.EnumAgentBoundaryHandling.WRAP:
+            if agent_boundary_handling == PPConfig.EnumAgentBoundaryHandling.WRAP:
                 pos_new[0] = self.custom_mod(pos_new[0] - DOMAIN_MIN[0] + DOMAIN_SIZE[0], DOMAIN_SIZE[0]) + DOMAIN_MIN[0]
                 pos_new[1] = self.custom_mod(pos_new[1] - DOMAIN_MIN[1] + DOMAIN_SIZE[1], DOMAIN_SIZE[1]) + DOMAIN_MIN[1]
-            elif PPVariables.agent_boundary_handling == PPVariables.EnumAgentBoundaryHandling.REINIT_CENTER:
+            elif agent_boundary_handling == PPConfig.EnumAgentBoundaryHandling.REINIT_CENTER:
                 if pos_new[0] <= DOMAIN_MIN[0] or pos_new[0] >= DOMAIN_MAX[0] or pos_new[1] <= DOMAIN_MIN[1] or pos_new[1] >= DOMAIN_MAX[1]:
                     pos_new[0] = 0.5 * (DOMAIN_MIN[0] + DOMAIN_MAX[0])
                     pos_new[1] = 0.5 * (DOMAIN_MIN[1] + DOMAIN_MAX[1])
-            elif PPVariables.agent_boundary_handling == PPVariables.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
+            elif agent_boundary_handling == PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
                 if pos_new[0] <= DOMAIN_MIN[0] or pos_new[0] >= DOMAIN_MAX[0] or pos_new[1] <= DOMAIN_MIN[1] or pos_new[1] >= DOMAIN_MAX[1]:
                     pos_new[0] = DOMAIN_MIN[0] + timath.clamp(ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999) * DOMAIN_SIZE[0]
                     pos_new[1] = DOMAIN_MIN[1] + timath.clamp(ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999) * DOMAIN_SIZE[1]
@@ -142,24 +140,23 @@ class Kernels:
             trace_field[trace_cell][0] += ti.max(1.0e-4, ti.cast(N_DATA, PPTypes.FLOAT_GPU) / ti.cast(N_AGENTS, PPTypes.FLOAT_GPU)) * weight
         return
 
-    ## TODO: please change calls to DIFFUSION_WEIGHTS
     @ti.kernel
-    def deposit_relaxation_step(self,attenuation: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, deposit_field: ti.template(), DEPOSIT_RESOLUTION: PPTypes.VEC2i):
+    def deposit_relaxation_step(self,attenuation: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DEPOSIT_RESOLUTION: PPTypes.VEC2i, deposit_field: ti.template()):
         DIFFUSION_WEIGHTS = [1.0, 1.0, 0.707]
-        DIFFUSION_WEIGHTS_NORM = DIFFUSION_KERNEL[0] + 4.0 * DIFFUSION_KERNEL[1] + 4.0 * DIFFUSION_KERNEL[2]
+        DIFFUSION_WEIGHTS_NORM = DIFFUSION_WEIGHTS[0] + 4.0 * DIFFUSION_WEIGHTS[1] + 4.0 * DIFFUSION_WEIGHTS[2]
         for cell in ti.grouped(deposit_field):
             ## The "beautiful" expression below implements a 3x3 kernel diffusion with manually wrapped addressing
             ## Taichi doesn't support modulo for tuples so each dimension is handled separately
-            value =   self.DIFFUSION_KERNEL[0] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[1] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                    + self.DIFFUSION_KERNEL[2] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]
-            deposit_field[cell][1 - current_deposit_index] = attenuation * value / self.DIFFUSION_KERNEL_NORM
+            value =   DIFFUSION_WEIGHTS[0] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + DIFFUSION_WEIGHTS[1] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + DIFFUSION_WEIGHTS[1] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + DIFFUSION_WEIGHTS[1] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + DIFFUSION_WEIGHTS[1] * deposit_field[( (cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + DIFFUSION_WEIGHTS[2] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + DIFFUSION_WEIGHTS[2] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + DIFFUSION_WEIGHTS[2] * deposit_field[( (cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
+                    + DIFFUSION_WEIGHTS[2] * deposit_field[( (cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]
+            deposit_field[cell][1 - current_deposit_index] = attenuation * value / DIFFUSION_WEIGHTS_NORM
         return
 
     @ti.kernel
@@ -170,7 +167,7 @@ class Kernels:
         return
 
     @ti.kernel
-    def render_visualization(self,deposit_vis: PPTypes.FLOAT_GPU, trace_vis: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, deposit_field: ti.template(),trace_field: ti.template(), vis_field: ti.template(), DEPOSIT_RESOLUTION: PPTypes.VEC2i, VIS_RESOLUTION: PPTypes.VEC2i, TRACE_RESOLUTION: PPTypes.VEC2i):
+    def render_visualization(self,deposit_vis: PPTypes.FLOAT_GPU, trace_vis: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DEPOSIT_RESOLUTION: PPTypes.VEC2i, VIS_RESOLUTION: PPTypes.VEC2i, TRACE_RESOLUTION: PPTypes.VEC2i, deposit_field: ti.template(),trace_field: ti.template(), vis_field: ti.template()):
         for x, y in ti.ndrange(vis_field.shape[0], vis_field.shape[1]):
             deposit_val = deposit_field[x * DEPOSIT_RESOLUTION[0] // VIS_RESOLUTION[0], y * DEPOSIT_RESOLUTION[1] // VIS_RESOLUTION[1]][current_deposit_index]
             trace_val = trace_field[x * TRACE_RESOLUTION[0] // VIS_RESOLUTION[0], y * TRACE_RESOLUTION[1] // VIS_RESOLUTION[1]]
