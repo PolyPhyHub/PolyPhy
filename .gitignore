@@ -136,3 +136,10 @@ src/imgui.ini
 
 # IDE 
 .idea/
+data/csv/3D_lautonomy_coords.csv
+data/csv/3D_lautonomy_coords_with_weights.csv
+data/csv/3D_lautonomy_coords_with_weights_equalto_LENGTHOFWORD.csv
+capture/Lautonomy_embedding_July23_18k_tokens.mp4
+experiments/jupyter/production/imgui.ini
+experiments/jupyter/testing/imgui.ini
+data/csv/example_box_polyphy.csv
