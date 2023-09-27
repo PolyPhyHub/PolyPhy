@@ -16,6 +16,11 @@ class PolyPhy_2DDiscrete(PolyPhy):
         self.kernels = Kernels()
         self.ppInternalData = PPInternalData(self.rng,self.kernels,self.ppConfig)
 
+    def parse_args(self):
+        super().parse_args()
+        ## Place any additional arguments here, following the template in parent PolyPhy class
+        self.args = self.parser.parse_args()
+
     def start_simulation(self):
         PPSimulation(self.ppInternalData,self.batch_mode,self.num_iterations)
         PPPostSimulation(self.ppInternalData)

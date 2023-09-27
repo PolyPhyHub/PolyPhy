@@ -193,42 +193,14 @@ class PPInputData:
     ROOT = '../../../'
     input_file = ''
 
-    def _load_from_file(file):
+    def _load_from_file(self):
         # Load from a file - parse file extension
         pass
 
-    def _generate_test_data(rng):
+    def _generate_test_data(self,rng):
         # Load random data to test / simulation
         pass
 
-class PPInputData_2DDiscrete(PPInputData):
-    ## TODO: determine ROOT automatically
-    ## TODO: load data from specified file + type
-    
-    def _load_from_file(self):
-        PPUtils.logToStdOut("info",'Loading input file... ' + self.ROOT + self.input_file, self.DOMAIN_MIN)
-        self.data = np.loadtxt(self.ROOT + self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
-        self.N_DATA = self.data.shape[0]
-        self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
-        self.domain_min = (np.min(self.data[:,0]), np.min(self.data[:,1]))
-        self.domain_max = (np.max(self.data[:,0]), np.max(self.data[:,1]))
-        self.domain_size = np.subtract(self.domain_max, self.domain_min)
-        self.DOMAIN_MIN = (self.domain_min[0] - PPConfig.DOMAIN_MARGIN * self.domain_size[0], self.domain_min[1] - PPConfig.DOMAIN_MARGIN * self.domain_size[1])
-        self.DOMAIN_MAX = (self.domain_max[0] + PPConfig.DOMAIN_MARGIN * self.domain_size[0], self.domain_max[1] + PPConfig.DOMAIN_MARGIN * self.domain_size[1])
-        self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
-        self.AVG_WEIGHT = np.mean(self.data[:,2])
-
-    def _generate_test_data(self,rng):
-        self.N_DATA = PPConfig.N_DATA_DEFAULT
-        self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
-        self.DOMAIN_SIZE = PPConfig.DOMAIN_SIZE_DEFAULT
-        self.DOMAIN_MIN = (0.0, 0.0)
-        self.DOMAIN_MAX = PPConfig.DOMAIN_SIZE_DEFAULT
-        self.data = np.zeros(shape=(self.N_DATA, 3), dtype = PPTypes.FLOAT_CPU)
-        self.data[:, 0] = rng.normal(loc = self.DOMAIN_MIN[0] + 0.5 * self.DOMAIN_MAX[0], scale = 0.13 * self.DOMAIN_SIZE[0], size = self.N_DATA)
-        self.data[:, 1] = rng.normal(loc = self.DOMAIN_MIN[1] + 0.5 * self.DOMAIN_MAX[1], scale = 0.13 * self.DOMAIN_SIZE[1], size = self.N_DATA)
-        self.data[:, 2] = np.mean(self.data[:,2])
-    
     def _print_simulation_data_stats(self):
         PPUtils.logToStdOut("info",'Simulation domain min:', self.DOMAIN_MIN)
         PPUtils.logToStdOut("info",'Simulation domain max:', self.DOMAIN_MAX)
@@ -245,14 +217,42 @@ class PPInputData_2DDiscrete(PPInputData):
         self.DOMAIN_SIZE = None
         self.N_DATA = None
         self.N_AGENTS = None
-        self.AVG_WEIGHT = 10.0
+        self.AVG_WEIGHT = None
         self.input_file = input_file
-
         if len(self.input_file) > 0:
             self._load_from_file()
         else:
             self._generate_test_data(rng)
         self._print_simulation_data_stats()
+
+class PPInputData_2DDiscrete(PPInputData):
+    ## TODO: determine ROOT automatically
+    ## TODO: load datasets from specified file + type
+    
+    def _load_from_file(self):
+        PPUtils.logToStdOut("info",'Loading input file... ' + self.ROOT + self.input_file, self.DOMAIN_MIN)
+        self.data = np.loadtxt(self.ROOT + self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
+        self.N_DATA = self.data.shape[0]
+        self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
+        self.domain_min = (np.min(self.data[:,0]), np.min(self.data[:,1]))
+        self.domain_max = (np.max(self.data[:,0]), np.max(self.data[:,1]))
+        self.domain_size = np.subtract(self.domain_max, self.domain_min)
+        self.DOMAIN_MIN = (self.domain_min[0] - PPConfig.DOMAIN_MARGIN * self.domain_size[0], self.domain_min[1] - PPConfig.DOMAIN_MARGIN * self.domain_size[1])
+        self.DOMAIN_MAX = (self.domain_max[0] + PPConfig.DOMAIN_MARGIN * self.domain_size[0], self.domain_max[1] + PPConfig.DOMAIN_MARGIN * self.domain_size[1])
+        self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
+        self.AVG_WEIGHT = np.mean(self.data[:,2])
+
+    def _generate_test_data(self,rng):
+        self.AVG_WEIGHT = 10.0
+        self.N_DATA = PPConfig.N_DATA_DEFAULT
+        self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
+        self.DOMAIN_SIZE = PPConfig.DOMAIN_SIZE_DEFAULT
+        self.DOMAIN_MIN = (0.0, 0.0)
+        self.DOMAIN_MAX = PPConfig.DOMAIN_SIZE_DEFAULT
+        self.data = np.zeros(shape=(self.N_DATA, 3), dtype = PPTypes.FLOAT_CPU)
+        self.data[:, 0] = rng.normal(loc = self.DOMAIN_MIN[0] + 0.5 * self.DOMAIN_MAX[0], scale = 0.13 * self.DOMAIN_SIZE[0], size = self.N_DATA)
+        self.data[:, 1] = rng.normal(loc = self.DOMAIN_MIN[1] + 0.5 * self.DOMAIN_MAX[1], scale = 0.13 * self.DOMAIN_SIZE[1], size = self.N_DATA)
+        self.data[:, 2] = np.mean(self.data[:,2])    
 
 class PPInternalData:    
     def initInternalData(self,kernels):
@@ -279,6 +279,7 @@ class PPInternalData:
             os.makedirs(self.ppConfig.ppData.ROOT + "data/fits/")
         current_stamp = PPUtils.stamp()
         deposit = self.deposit_field.to_numpy()
+        PPUtils.logToStdOut("info",'Storing solution data in data/fits/')
         np.save(self.ppConfig.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
         trace = self.trace_field.to_numpy()
         np.save(self.ppConfig.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
@@ -316,7 +317,7 @@ class PPSimulation:
         window.GUI.text("MCPM parameters:")
         ppConfig.sense_distance = window.GUI.slider_float('Sensing dist', ppConfig.sense_distance, 0.1, 0.05 * ppConfig.DOMAIN_SIZE_MAX)
         ppConfig.sense_angle = window.GUI.slider_float('Sensing angle', ppConfig.sense_angle, 0.01, 0.5 * np.pi)
-        ppConfig.sampling_exponent = window.GUI.slider_float('Sampling expo', ppConfig.sampling_exponent, 1.0, 10.0)
+        ppConfig.sampling_exponent = window.GUI.slider_float('Sampling expo', ppConfig.sampling_exponent, 0.1, 5.0)
         ppConfig.step_size = window.GUI.slider_float('Step size', ppConfig.step_size, 0.0, 0.005 * ppConfig.DOMAIN_SIZE_MAX)
         ppConfig.data_deposit = window.GUI.slider_float('Data deposit', ppConfig.data_deposit, 0.0, ppConfig.MAX_DEPOSIT)
         ppConfig.agent_deposit = window.GUI.slider_float('Agent deposit', ppConfig.agent_deposit, 0.0, 10.0 * ppConfig.MAX_DEPOSIT * ppConfig.DATA_TO_AGENTS_RATIO)
@@ -427,7 +428,9 @@ class PPSimulation:
             while window.running if 'window' in locals() else True:
                 if batch_mode is True and curr_iteration > num_iterations:
                     break
-                curr_iteration = curr_iteration+1
+                curr_iteration += 1
+                if batch_mode is True and (num_iterations % curr_iteration) == 0:
+                    PPUtils.logToStdOut("info",'Running MCPM... iteration', curr_iteration, '/', num_iterations)
 
                 if batch_mode is False:
                     ## Handle controls
