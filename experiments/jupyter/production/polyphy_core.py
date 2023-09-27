@@ -7,12 +7,62 @@ from numpy.random import default_rng
 import matplotlib.pyplot as plt
 import taichi as ti
 import taichi.math as timath
-import zope.interface
 import logging
+
+class PPUtils:
+    @staticmethod
+    def stamp() -> str:
+        return datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d_%H-%M-%S")
+    
+    log_level = {
+        'debug': logging.DEBUG,
+        'info': logging.INFO,
+        'warning': logging.WARNING,
+        'error': logging.ERROR,
+        'critical': logging.CRITICAL
+    }
+
+    file_logger = logging.getLogger("file")
+    file_handler = logging.FileHandler("polyphy.log")
+    file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(file_formatter)
+    file_logger.addHandler(file_handler)
+    file_log_functions = {
+        'debug': file_logger.debug,
+        'info': file_logger.info,
+        'warning': file_logger.warning,
+        'error': file_logger.error,
+        'critical': file_logger.critical
+    }
+
+    @staticmethod
+    def logToFile(level, *msg) -> None:
+        PPUtils.file_logger.setLevel(PPUtils.log_level.get(level, logging.INFO))
+        res = " ".join(map(str, msg))
+        PPUtils.file_log_functions.get(level, PPUtils.file_logger.info)(res)
+    
+    console_logger = logging.getLogger("console")
+    console_handler = logging.StreamHandler()
+    console_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    console_handler.setFormatter(console_formatter)
+    console_logger.addHandler(console_handler)
+    console_log_functions = {
+        'debug': console_logger.debug,
+        'info': console_logger.info,
+        'warning': console_logger.warning,
+        'error': console_logger.error,
+        'critical': console_logger.critical
+    }
+
+    @staticmethod
+    def logToStdOut(level, *msg) -> None:
+        PPUtils.console_logger.setLevel(PPUtils.log_level.get(level, logging.INFO))
+        res = " ".join(map(str, msg))
+        PPUtils.previous_log_message = res
+        PPUtils.console_log_functions.get(level, PPUtils.console_logger.info)(res)
 
 class PPTypes:
     ## TODO (low priority): impletement and test float 16 and 64
-
     FLOAT_CPU = np.float32
     INT_CPU = np.int32
     FLOAT_GPU = ti.f32
@@ -81,6 +131,9 @@ class PPConfig:
     MAX_DEPOSIT = 10.0
     DOMAIN_MARGIN = 0.05
 
+    ## Input files
+    input_file = ''
+
     @staticmethod
     def set_value(constant_name, new_value):
         CONSTANT_VARS = ["N_DATA_DEFAULT","N_AGENTS_DEFAULT","DOMAIN_SIZE_DEFAULT"]
@@ -97,43 +150,64 @@ class PPConfig:
         else:
             raise AttributeError(f"'PPConfig' has no attribute '{constant_name}'")
 
-    def __init__(self,ppData):
+    def __init__(self):
+        pass
+
+    def register_data(self,ppData):
+        pass
+
+class PPConfig_2DDiscrete(PPConfig):
+    def __init__(self):
+        self.sense_distance = 0.0
+        self.sense_angle = 1.5
+        self.steering_rate = 0.5
+        self.step_size = 0.0
+        self.sampling_exponent = 2.0
+        self.deposit_attenuation = 0.9
+        self.trace_attenuation = 0.96
+        self.data_deposit = -1.0
+        self.agent_deposit = -1.0
+        self.deposit_vis = 0.1
+        self.trace_vis = 1.0
+
+    def register_data(self,ppData):
+        self.ppData = ppData
         self.DATA_TO_AGENTS_RATIO = PPTypes.FLOAT_CPU(ppData.N_DATA) / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]])
         self.TRACE_RESOLUTION = PPTypes.INT_CPU((PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX, PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX))
         self.DEPOSIT_RESOLUTION = (self.TRACE_RESOLUTION[0] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[1] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR)
+        if self.sense_distance < 1.e-4:
+            self.sense_distance = 0.005 * self.DOMAIN_SIZE_MAX
+        if self.step_size < 1.e-5:
+            self.step_size = 0.0005 * self.DOMAIN_SIZE_MAX
+        if self.data_deposit < -1.e-4:
+            self.data_deposit = 0.1 * PPConfig.MAX_DEPOSIT
+        if self.agent_deposit < -1.e-5:
+            self.agent_deposit = self.data_deposit * self.DATA_TO_AGENTS_RATIO
         self.VIS_RESOLUTION = self.TRACE_RESOLUTION
-        self.sense_distance = 0.005 * self.DOMAIN_SIZE_MAX
-        self.sense_angle = 1.5
-        self.steering_rate = 0.5
-        self.step_size = 0.0005 * self.DOMAIN_SIZE_MAX
-        self.sampling_exponent = 2.0
-        self.deposit_attenuation = 0.9
-        self.trace_attenuation = 0.96
-        self.data_deposit = 0.1 * PPConfig.MAX_DEPOSIT
-        self.agent_deposit = self.data_deposit * self.DATA_TO_AGENTS_RATIO
-        self.deposit_vis = 0.1
-        self.trace_vis = 1.0
-        self.ppData = ppData
+        self.input_file = ppData.input_file
         PPUtils.logToStdOut('info','Trace grid resolution:', self.TRACE_RESOLUTION)
         PPUtils.logToStdOut('info','Deposit grid resolution:', self.DEPOSIT_RESOLUTION)
 
-class PPInputData(zope.interface.Interface):
-    def load_from_file(file):
+class PPInputData:
+    ROOT = '../../../'
+    input_file = ''
+
+    def _load_from_file(file):
         # Load from a file - parse file extension
         pass
 
-    def generate_test_data(rng):
+    def _generate_test_data(rng):
         # Load random data to test / simulation
         pass
 
-@zope.interface.implementer(PPInputData)
-class PPInputData_2DDiscrete:
+class PPInputData_2DDiscrete(PPInputData):
     ## TODO: determine ROOT automatically
-    ROOT = '../../../'
-    def load_from_file(self,file):
-        ## TODO: implement file loader for different file types
-        self.data = np.loadtxt('../../../' + file, delimiter=",").astype(PPTypes.FLOAT_CPU)
+    ## TODO: load data from specified file + type
+    
+    def _load_from_file(self):
+        PPUtils.logToStdOut("info",'Loading input file... ' + self.ROOT + self.input_file, self.DOMAIN_MIN)
+        self.data = np.loadtxt(self.ROOT + self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
         self.N_DATA = self.data.shape[0]
         self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
         self.domain_min = (np.min(self.data[:,0]), np.min(self.data[:,1]))
@@ -144,7 +218,7 @@ class PPInputData_2DDiscrete:
         self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
         self.AVG_WEIGHT = np.mean(self.data[:,2])
 
-    def generate_test_data(self,rng):
+    def _generate_test_data(self,rng):
         self.N_DATA = PPConfig.N_DATA_DEFAULT
         self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
         self.DOMAIN_SIZE = PPConfig.DOMAIN_SIZE_DEFAULT
@@ -155,7 +229,7 @@ class PPInputData_2DDiscrete:
         self.data[:, 1] = rng.normal(loc = self.DOMAIN_MIN[1] + 0.5 * self.DOMAIN_MAX[1], scale = 0.13 * self.DOMAIN_SIZE[1], size = self.N_DATA)
         self.data[:, 2] = np.mean(self.data[:,2])
     
-    def print_simulation_data(self):
+    def _print_simulation_data_stats(self):
         PPUtils.logToStdOut("info",'Simulation domain min:', self.DOMAIN_MIN)
         PPUtils.logToStdOut("info",'Simulation domain max:', self.DOMAIN_MAX)
         PPUtils.logToStdOut("info",'Simulation domain size:', self.DOMAIN_SIZE)
@@ -172,12 +246,13 @@ class PPInputData_2DDiscrete:
         self.N_DATA = None
         self.N_AGENTS = None
         self.AVG_WEIGHT = 10.0
-        if len(input_file) > 0:
-            self.load_from_file(input_file)
+        self.input_file = input_file
+
+        if len(self.input_file) > 0:
+            self._load_from_file()
         else:
-            self.generate_test_data(rng)
-            ## TODO: load data from specified file + type
-        self.print_simulation_data()
+            self._generate_test_data(rng)
+        self._print_simulation_data_stats()
 
 class PPInternalData:    
     def initInternalData(self,kernels):
@@ -234,67 +309,15 @@ class PPInternalData:
         self.kernels = kernels
         self.initInternalData(kernels)
 
-class PPUtils:
-    log_level = {
-        'debug': logging.DEBUG,
-        'info': logging.INFO,
-        'warning': logging.WARNING,
-        'error': logging.ERROR,
-        'critical': logging.CRITICAL
-    }
-
-    @staticmethod
-    def stamp() -> str:
-        return datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d_%H-%M-%S")
-
-    file_logger = logging.getLogger("file")
-    file_handler = logging.FileHandler("polyphy.log")
-    file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(file_formatter)
-    file_logger.addHandler(file_handler)
-    file_log_functions = {
-        'debug': file_logger.debug,
-        'info': file_logger.info,
-        'warning': file_logger.warning,
-        'error': file_logger.error,
-        'critical': file_logger.critical
-    }
-
-    @staticmethod
-    def logToFile(level, *msg) -> None:
-        PPUtils.file_logger.setLevel(PPUtils.log_level.get(level, logging.INFO))
-        res = " ".join(map(str, msg))
-        PPUtils.file_log_functions.get(level, PPUtils.file_logger.info)(res)
-    
-    console_logger = logging.getLogger("console")
-    console_handler = logging.StreamHandler()
-    console_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    console_handler.setFormatter(console_formatter)
-    console_logger.addHandler(console_handler)
-    console_log_functions = {
-        'debug': console_logger.debug,
-        'info': console_logger.info,
-        'warning': console_logger.warning,
-        'error': console_logger.error,
-        'critical': console_logger.critical
-    }
-
-    @staticmethod
-    def logToStdOut(level, *msg) -> None:
-        PPUtils.console_logger.setLevel(PPUtils.log_level.get(level, logging.INFO))
-        res = " ".join(map(str, msg))
-        PPUtils.previous_log_message = res
-        PPUtils.console_log_functions.get(level, PPUtils.console_logger.info)(res)
-
 class PPSimulation:
     def __drawGUI__(self,window,ppConfig,ppData):
         ## Draw main interactive control GUI
         window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[0]), 0.74 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
         window.GUI.text("MCPM parameters:")
-        ppConfig.sense_distance = window.GUI.slider_float('Sensing dist', ppConfig.sense_distance, 0.1, 0.05 * np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]]))
+        ppConfig.sense_distance = window.GUI.slider_float('Sensing dist', ppConfig.sense_distance, 0.1, 0.05 * ppConfig.DOMAIN_SIZE_MAX)
         ppConfig.sense_angle = window.GUI.slider_float('Sensing angle', ppConfig.sense_angle, 0.01, 0.5 * np.pi)
         ppConfig.sampling_exponent = window.GUI.slider_float('Sampling expo', ppConfig.sampling_exponent, 1.0, 10.0)
-        ppConfig.step_size = window.GUI.slider_float('Step size', ppConfig.step_size, 0.0, 0.005 * np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]]))
+        ppConfig.step_size = window.GUI.slider_float('Step size', ppConfig.step_size, 0.0, 0.005 * ppConfig.DOMAIN_SIZE_MAX)
         ppConfig.data_deposit = window.GUI.slider_float('Data deposit', ppConfig.data_deposit, 0.0, ppConfig.MAX_DEPOSIT)
         ppConfig.agent_deposit = window.GUI.slider_float('Agent deposit', ppConfig.agent_deposit, 0.0, 10.0 * ppConfig.MAX_DEPOSIT * ppConfig.DATA_TO_AGENTS_RATIO)
         ppConfig.deposit_attenuation = window.GUI.slider_float('Deposit attn', ppConfig.deposit_attenuation, 0.8, 0.999)
@@ -344,7 +367,7 @@ class PPSimulation:
         window.GUI.end()
 
         ## Help window
-        ## Do not exceed prescribed line length of 120 characters, there is no text wrapping in Taichi GUI for now
+        ## Do not exceed prescribed line length of 120 characters, there is no text wrapping in Taichi GUI
         window.GUI.begin('Help', 0.35 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
         window.GUI.text("Welcome to PolyPhy 2D GUI variant written by researchers at UCSC/OSPO with the help of numerous external contributors\n(https://github.com/PolyPhyHub). PolyPhy implements MCPM, an agent-based, stochastic, pattern forming algorithm designed\nby Elek et al, inspired by Physarum polycephalum slime mold. Below is a quick reference guide explaining the parameters\nand features available in the interface. The reference as well as other panels can be hidden using the arrow button, moved,\nand rescaled.")
         window.GUI.text("")
@@ -458,9 +481,11 @@ class PPSimulation:
                     canvas.set_image(ppInternalData.vis_field)
                     if self.do_screenshot:
                         window.save_image(ppInternalData.ppConfig.ppData.ROOT + 'capture/screenshot_' + PPUtils.stamp() + '.png') ## Must appear before window.show() call
+                        self.do_screenshot = False
                     window.show()
                 if self.do_export:
                     ppInternalData.store_fit()
+                    self.do_export = False
                 if self.do_quit:
                     break
             if batch_mode is False:    

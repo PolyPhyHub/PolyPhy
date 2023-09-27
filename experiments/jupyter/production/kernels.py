@@ -1,6 +1,6 @@
 import taichi as ti
 import taichi.math as timath
-from polyphy_functions import PPTypes, PPConfig
+from polyphy_core import PPTypes, PPConfig
 
 @ti.data_oriented
 class Kernels:
