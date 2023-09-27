@@ -10,11 +10,11 @@ class PolyPhy_2DDiscrete(PolyPhy):
         self.ppConfig = PPConfig_2DDiscrete()
         self.parse_values()
         self.rng = default_rng()
-        self.ppInputData = PPInputData_2DDiscrete(self.input_file,self.rng)
+        self.ppInputData = PPInputData_2DDiscrete(self.input_file, self.rng)
         self.ppConfig.register_data(self.ppInputData)
         ti.init(arch=ti.gpu)
-        self.kernels = Kernels()
-        self.ppInternalData = PPInternalData(self.rng,self.kernels,self.ppConfig)
+        self.kernels = PPKernels()
+        self.ppInternalData = PPInternalData_2DDiscrete(self.rng, self.kernels, self.ppConfig)
 
     def parse_args(self):
         super().parse_args()
@@ -22,7 +22,7 @@ class PolyPhy_2DDiscrete(PolyPhy):
         self.args = self.parser.parse_args()
 
     def start_simulation(self):
-        PPSimulation(self.ppInternalData,self.batch_mode,self.num_iterations)
-        PPPostSimulation(self.ppInternalData)
+        PPSimulation_2DDiscrete(self.ppInternalData, self.batch_mode, self.num_iterations)
+        PPPostSimulation_2DDiscrete(self.ppInternalData)
 
 PolyPhy_2DDiscrete().start_simulation()

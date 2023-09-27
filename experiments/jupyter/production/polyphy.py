@@ -1,5 +1,5 @@
 from polyphy_core import *
-from kernels import Kernels
+from polyphy_kernels import PPKernels
 import argparse
 from numpy.random import default_rng
 import taichi as ti

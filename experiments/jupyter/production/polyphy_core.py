@@ -134,6 +134,19 @@ class PPConfig:
     ## Input files
     input_file = ''
 
+    ## Simulation parameters
+    sense_distance = 0.0
+    sense_angle = 1.5
+    steering_rate = 0.5
+    step_size = 0.0
+    sampling_exponent = 2.0
+    deposit_attenuation = 0.9
+    trace_attenuation = 0.96
+    data_deposit = -1.0
+    agent_deposit = -1.0
+    deposit_vis = 0.1
+    trace_vis = 1.0
+
     @staticmethod
     def set_value(constant_name, new_value):
         CONSTANT_VARS = ["N_DATA_DEFAULT","N_AGENTS_DEFAULT","DOMAIN_SIZE_DEFAULT"]
@@ -150,25 +163,15 @@ class PPConfig:
         else:
             raise AttributeError(f"'PPConfig' has no attribute '{constant_name}'")
 
-    def __init__(self):
+    def register_data(self,ppData):
         pass
 
-    def register_data(self,ppData):
+    def __init__(self):
         pass
 
 class PPConfig_2DDiscrete(PPConfig):
     def __init__(self):
-        self.sense_distance = 0.0
-        self.sense_angle = 1.5
-        self.steering_rate = 0.5
-        self.step_size = 0.0
-        self.sampling_exponent = 2.0
-        self.deposit_attenuation = 0.9
-        self.trace_attenuation = 0.96
-        self.data_deposit = -1.0
-        self.agent_deposit = -1.0
-        self.deposit_vis = 0.1
-        self.trace_vis = 1.0
+        super()
 
     def register_data(self,ppData):
         self.ppData = ppData
@@ -193,15 +196,15 @@ class PPInputData:
     ROOT = '../../../'
     input_file = ''
 
-    def _load_from_file(self):
+    def __load_from_file__(self):
         # Load from a file - parse file extension
         pass
 
-    def _generate_test_data(self,rng):
+    def __generate_test_data__(self,rng):
         # Load random data to test / simulation
         pass
 
-    def _print_simulation_data_stats(self):
+    def __print_simulation_data_stats__(self):
         PPUtils.logToStdOut("info",'Simulation domain min:', self.DOMAIN_MIN)
         PPUtils.logToStdOut("info",'Simulation domain max:', self.DOMAIN_MAX)
         PPUtils.logToStdOut("info",'Simulation domain size:', self.DOMAIN_SIZE)
@@ -220,16 +223,16 @@ class PPInputData:
         self.AVG_WEIGHT = None
         self.input_file = input_file
         if len(self.input_file) > 0:
-            self._load_from_file()
+            self.__load_from_file__()
         else:
-            self._generate_test_data(rng)
-        self._print_simulation_data_stats()
+            self.__generate_test_data__(rng)
+        self.__print_simulation_data_stats__()
 
 class PPInputData_2DDiscrete(PPInputData):
     ## TODO: determine ROOT automatically
     ## TODO: load datasets from specified file + type
     
-    def _load_from_file(self):
+    def __load_from_file__(self):
         PPUtils.logToStdOut("info",'Loading input file... ' + self.ROOT + self.input_file, self.DOMAIN_MIN)
         self.data = np.loadtxt(self.ROOT + self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
         self.N_DATA = self.data.shape[0]
@@ -242,7 +245,8 @@ class PPInputData_2DDiscrete(PPInputData):
         self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
         self.AVG_WEIGHT = np.mean(self.data[:,2])
 
-    def _generate_test_data(self,rng):
+    def __generate_test_data__(self,rng):
+        PPUtils.logToStdOut("info",'Generating synthetic testing dataset...')
         self.AVG_WEIGHT = 10.0
         self.N_DATA = PPConfig.N_DATA_DEFAULT
         self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
@@ -254,18 +258,28 @@ class PPInputData_2DDiscrete(PPInputData):
         self.data[:, 1] = rng.normal(loc = self.DOMAIN_MIN[1] + 0.5 * self.DOMAIN_MAX[1], scale = 0.13 * self.DOMAIN_SIZE[1], size = self.N_DATA)
         self.data[:, 2] = np.mean(self.data[:,2])    
 
-class PPInternalData:    
-    def initInternalData(self,kernels):
+class PPInternalData:
+    def __init_internal_data__(self,kernels):
+        pass
+    def edit_data(self, edit_index: PPTypes.INT_CPU, window: ti.ui.Window) -> PPTypes.INT_CPU:
+        pass
+    def store_fit(self):
+        pass
+    def __init__(self,rng,kernels,ppConfig):
+        pass
+
+class PPInternalData_2DDiscrete(PPInternalData):
+    def __init_internal_data__(self, ppKernels):
         ## Initialize GPU fields
         self.data_field.from_numpy(self.ppConfig.ppData.data)
         self.agents_field.from_numpy(self.agents)
-        kernels.zero_field(self.deposit_field)
-        kernels.zero_field(self.trace_field)
-        kernels.zero_field(self.vis_field)
+        ppKernels.zero_field(self.deposit_field)
+        ppKernels.zero_field(self.trace_field)
+        ppKernels.zero_field(self.vis_field)
 
     ## Insert a new data point, Round-Robin style, and upload to GPU
     ## This can be very costly for many data points! (eg 10^5 or more)
-    def edit_data(self,edit_index: PPTypes.INT_CPU, window: ti.ui.Window) -> PPTypes.INT_CPU:
+    def edit_data(self, edit_index: PPTypes.INT_CPU, window: ti.ui.Window) -> PPTypes.INT_CPU:
         mouse_rel_pos = (np.min([np.max([0.001, window.get_cursor_pos()[0]]), 0.999]), np.min([np.max([0.001, window.get_cursor_pos()[1]]), 0.999]))
         mouse_pos = np.add(self.ppConfig.ppData.DOMAIN_MIN, np.multiply(mouse_rel_pos, self.ppConfig.ppData.DOMAIN_SIZE))
         self.ppConfig.ppData.data[edit_index, :] = mouse_pos[0], mouse_pos[1], self.ppConfig.ppData.AVG_WEIGHT
@@ -278,14 +292,14 @@ class PPInternalData:
         if not os.path.exists(self.ppConfig.ppData.ROOT + "data/fits/"):
             os.makedirs(self.ppConfig.ppData.ROOT + "data/fits/")
         current_stamp = PPUtils.stamp()
-        deposit = self.deposit_field.to_numpy()
         PPUtils.logToStdOut("info",'Storing solution data in data/fits/')
+        deposit = self.deposit_field.to_numpy()
         np.save(self.ppConfig.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
         trace = self.trace_field.to_numpy()
         np.save(self.ppConfig.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
         return current_stamp, deposit, trace
     
-    def __init__(self,rng,kernels,ppConfig):
+    def __init__(self, rng, ppKernels, ppConfig):
         self.agents = np.zeros(shape=(ppConfig.ppData.N_AGENTS, 4), dtype = PPTypes.FLOAT_CPU)
         self.agents[:, 0] = rng.uniform(low = ppConfig.ppData.DOMAIN_MIN[0] + 0.001, high = ppConfig.ppData.DOMAIN_MAX[0] - 0.001, size = ppConfig.ppData.N_AGENTS)
         self.agents[:, 1] = rng.uniform(low = ppConfig.ppData.DOMAIN_MIN[1] + 0.001, high = ppConfig.ppData.DOMAIN_MAX[1] - 0.001, size = ppConfig.ppData.N_AGENTS)
@@ -307,11 +321,17 @@ class PPInternalData:
             ) / 2 ** 20), 'MB')
         
         self.ppConfig = ppConfig
-        self.kernels = kernels
-        self.initInternalData(kernels)
+        self.ppKernels = ppKernels
+        self.__init_internal_data__(ppKernels)
 
 class PPSimulation:
-    def __drawGUI__(self,window,ppConfig,ppData):
+    def __drawGUI__(self, window, ppConfig, ppData):
+        pass
+    def __init__(self, ppInternalData, batch_mode, num_iterations):
+        pass
+
+class PPSimulation_2DDiscrete(PPSimulation):
+    def __drawGUI__(self, window, ppConfig, ppData):
         ## Draw main interactive control GUI
         window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[0]), 0.74 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
         window.GUI.text("MCPM parameters:")
@@ -333,25 +353,21 @@ class PPSimulation:
             ppConfig.distance_sampling_distribution = ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL
         if window.GUI.checkbox("Maxwell-Boltzmann", ppConfig.distance_sampling_distribution == ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
             ppConfig.distance_sampling_distribution = ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
-
         window.GUI.text("Directional distribution:")
         if window.GUI.checkbox("Discrete", ppConfig.directional_sampling_distribution == ppConfig.EnumDirectionalSamplingDistribution.DISCRETE):
             ppConfig.directional_sampling_distribution = ppConfig.EnumDirectionalSamplingDistribution.DISCRETE
         if window.GUI.checkbox("Cone", ppConfig.directional_sampling_distribution == ppConfig.EnumDirectionalSamplingDistribution.CONE):
             ppConfig.directional_sampling_distribution = ppConfig.EnumDirectionalSamplingDistribution.CONE
-
         window.GUI.text("Directional mutation:")
         if window.GUI.checkbox("Deterministic", ppConfig.directional_mutation_type == ppConfig.EnumDirectionalMutationType.DETERMINISTIC):
             ppConfig.directional_mutation_type = ppConfig.EnumDirectionalMutationType.DETERMINISTIC
         if window.GUI.checkbox("Stochastic", ppConfig.directional_mutation_type == ppConfig.EnumDirectionalMutationType.PROBABILISTIC):
             ppConfig.directional_mutation_type = ppConfig.EnumDirectionalMutationType.PROBABILISTIC
-
         window.GUI.text("Deposit fetching:")
         if window.GUI.checkbox("Nearest neighbor", ppConfig.deposit_fetching_strategy == ppConfig.EnumDepositFetchingStrategy.NN):
             ppConfig.deposit_fetching_strategy = ppConfig.EnumDepositFetchingStrategy.NN
         if window.GUI.checkbox("Noise-perturbed NN", ppConfig.deposit_fetching_strategy == ppConfig.EnumDepositFetchingStrategy.NN_PERTURBED):
             ppConfig.deposit_fetching_strategy = ppConfig.EnumDepositFetchingStrategy.NN_PERTURBED
-
         window.GUI.text("Agent boundary handling:")
         if window.GUI.checkbox("Wrap around", ppConfig.agent_boundary_handling == ppConfig.EnumAgentBoundaryHandling.WRAP):
             ppConfig.agent_boundary_handling = ppConfig.EnumAgentBoundaryHandling.WRAP
@@ -416,7 +432,7 @@ class PPSimulation:
         self.do_simulate = True
         self.hide_UI = False
 
-        ## check if file exists
+        ## Check if file exists
         if os.path.exists("/tmp/flag") == False:
             if batch_mode is False:
                 window = ti.ui.Window('PolyPhy', (ppInternalData.vis_field.shape[0], ppInternalData.vis_field.shape[1]), show_window = True)
@@ -426,13 +442,14 @@ class PPSimulation:
             curr_iteration = 0
             ## Main simulation and rendering loop
             while window.running if 'window' in locals() else True:
-                if batch_mode is True and curr_iteration > num_iterations:
-                    break
-                curr_iteration += 1
-                if batch_mode is True and (num_iterations % curr_iteration) == 0:
-                    PPUtils.logToStdOut("info",'Running MCPM... iteration', curr_iteration, '/', num_iterations)
-
-                if batch_mode is False:
+                if batch_mode is True:
+                    ## Handle progress monitor
+                    curr_iteration += 1
+                    if curr_iteration > num_iterations:
+                        break
+                    if (num_iterations % curr_iteration) == 0:
+                        PPUtils.logToStdOut("info",'Running MCPM... iteration', curr_iteration, '/', num_iterations)
+                else: # batch_mode is False
                     ## Handle controls
                     if window.get_event(ti.ui.PRESS):
                         if window.event.key == 'e': self.do_export = True
@@ -443,14 +460,13 @@ class PPSimulation:
                             self.data_edit_index = ppInternalData.edit_data(self.data_edit_index,window)
                     if window.is_pressed(ti.ui.RMB):
                         self.data_edit_index = ppInternalData.edit_data(self.data_edit_index,window)
-                
                     if not self.hide_UI:
                         self.__drawGUI__(window,ppInternalData.ppConfig,ppInternalData.ppConfig.ppData)
             
                 ## Main simulation sequence
                 if self.do_simulate:
-                    ppInternalData.kernels.data_step(ppInternalData.ppConfig.data_deposit, self.current_deposit_index, ppInternalData.ppConfig.ppData.DOMAIN_MIN, ppInternalData.ppConfig.ppData.DOMAIN_MAX, ppInternalData.ppConfig.DEPOSIT_RESOLUTION,ppInternalData.data_field, ppInternalData.deposit_field)
-                    ppInternalData.kernels.agent_step(ppInternalData.ppConfig.sense_distance,\
+                    ppInternalData.ppKernels.data_step_2D_discrete(ppInternalData.ppConfig.data_deposit, self.current_deposit_index, ppInternalData.ppConfig.ppData.DOMAIN_MIN, ppInternalData.ppConfig.ppData.DOMAIN_MAX, ppInternalData.ppConfig.DEPOSIT_RESOLUTION,ppInternalData.data_field, ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.agent_step_2D_discrete(ppInternalData.ppConfig.sense_distance,\
                         ppInternalData.ppConfig.sense_angle,\
                         ppInternalData.ppConfig.steering_rate,\
                         ppInternalData.ppConfig.sampling_exponent,\
@@ -473,12 +489,12 @@ class PPSimulation:
                         ppInternalData.deposit_field,\
                         ppInternalData.trace_field
                         )
-                    ppInternalData.kernels.deposit_relaxation_step(ppInternalData.ppConfig.deposit_attenuation, self.current_deposit_index,ppInternalData.ppConfig.DEPOSIT_RESOLUTION,ppInternalData.deposit_field)
-                    ppInternalData.kernels.trace_relaxation_step(ppInternalData.ppConfig.trace_attenuation, ppInternalData.trace_field)
+                    ppInternalData.ppKernels.deposit_relaxation_step_2D_discrete(ppInternalData.ppConfig.deposit_attenuation, self.current_deposit_index,ppInternalData.ppConfig.DEPOSIT_RESOLUTION,ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.trace_relaxation_step_2D_discrete(ppInternalData.ppConfig.trace_attenuation, ppInternalData.trace_field)
                     self.current_deposit_index = 1 - self.current_deposit_index
             
                 ## Render visualization
-                ppInternalData.kernels.render_visualization(ppInternalData.ppConfig.deposit_vis, ppInternalData.ppConfig.trace_vis, self.current_deposit_index, ppInternalData.ppConfig.DEPOSIT_RESOLUTION, ppInternalData.ppConfig.VIS_RESOLUTION, ppInternalData.ppConfig.TRACE_RESOLUTION, ppInternalData.deposit_field,ppInternalData.trace_field, ppInternalData.vis_field)
+                ppInternalData.ppKernels.render_visualization_2D_discrete(ppInternalData.ppConfig.deposit_vis, ppInternalData.ppConfig.trace_vis, self.current_deposit_index, ppInternalData.ppConfig.DEPOSIT_RESOLUTION, ppInternalData.ppConfig.VIS_RESOLUTION, ppInternalData.ppConfig.TRACE_RESOLUTION, ppInternalData.deposit_field,ppInternalData.trace_field, ppInternalData.vis_field)
                 
                 if batch_mode is False:
                     canvas.set_image(ppInternalData.vis_field)
@@ -497,4 +513,8 @@ class PPSimulation:
 class PPPostSimulation:
     def __init__(self, ppInternalData):
         ppInternalData.store_fit()
+
+class PPPostSimulation_2DDiscrete(PPPostSimulation):
+    def __init__(self, ppInternalData):
+        super().__init__(ppInternalData)
 

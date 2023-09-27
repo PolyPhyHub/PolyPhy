@@ -3,7 +3,7 @@ import taichi.math as timath
 from polyphy_core import PPTypes, PPConfig
 
 @ti.data_oriented
-class Kernels:
+class PPKernels:
     ## Define all GPU functions and kernels for data and agent processing
     @ti.kernel
     def zero_field(self,f: ti.template()):
@@ -32,7 +32,7 @@ class Kernels:
         return a - b * ti.floor(a / b)
 
     @ti.kernel
-    def data_step(self, data_deposit: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DOMAIN_MIN: PPTypes.VEC2f, DOMAIN_MAX: PPTypes.VEC2f, DEPOSIT_RESOLUTION: PPTypes.VEC2i, data_field: ti.template(), deposit_field: ti.template()):
+    def data_step_2D_discrete(self, data_deposit: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DOMAIN_MIN: PPTypes.VEC2f, DOMAIN_MAX: PPTypes.VEC2f, DEPOSIT_RESOLUTION: PPTypes.VEC2i, data_field: ti.template(), deposit_field: ti.template()):
         for point in ti.ndrange(data_field.shape[0]):
             pos = PPTypes.VEC2f(0.0, 0.0)
             pos[0], pos[1], weight = data_field[point]
@@ -41,7 +41,7 @@ class Kernels:
         return
 
     @ti.kernel
-    def agent_step(self,sense_distance: PPTypes.FLOAT_GPU,\
+    def agent_step_2D_discrete(self,sense_distance: PPTypes.FLOAT_GPU,\
                 sense_angle: PPTypes.FLOAT_GPU,\
                 STEERING_RATE: PPTypes.FLOAT_GPU,\
                 sampling_exponent: PPTypes.FLOAT_GPU,\
@@ -141,7 +141,7 @@ class Kernels:
         return
 
     @ti.kernel
-    def deposit_relaxation_step(self,attenuation: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DEPOSIT_RESOLUTION: PPTypes.VEC2i, deposit_field: ti.template()):
+    def deposit_relaxation_step_2D_discrete(self,attenuation: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DEPOSIT_RESOLUTION: PPTypes.VEC2i, deposit_field: ti.template()):
         DIFFUSION_WEIGHTS = [1.0, 1.0, 0.707]
         DIFFUSION_WEIGHTS_NORM = DIFFUSION_WEIGHTS[0] + 4.0 * DIFFUSION_WEIGHTS[1] + 4.0 * DIFFUSION_WEIGHTS[2]
         for cell in ti.grouped(deposit_field):
@@ -160,14 +160,14 @@ class Kernels:
         return
 
     @ti.kernel
-    def trace_relaxation_step(self,attenuation: PPTypes.FLOAT_GPU, trace_field: ti.template()):
+    def trace_relaxation_step_2D_discrete(self,attenuation: PPTypes.FLOAT_GPU, trace_field: ti.template()):
         for cell in ti.grouped(trace_field):
             ## Perturb the attenuation by a small factor to avoid accumulating quantization errors
             trace_field[cell][0] *= attenuation - 0.001 + 0.002 * ti.random(dtype=PPTypes.FLOAT_GPU)
         return
 
     @ti.kernel
-    def render_visualization(self,deposit_vis: PPTypes.FLOAT_GPU, trace_vis: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DEPOSIT_RESOLUTION: PPTypes.VEC2i, VIS_RESOLUTION: PPTypes.VEC2i, TRACE_RESOLUTION: PPTypes.VEC2i, deposit_field: ti.template(),trace_field: ti.template(), vis_field: ti.template()):
+    def render_visualization_2D_discrete(self,deposit_vis: PPTypes.FLOAT_GPU, trace_vis: PPTypes.FLOAT_GPU, current_deposit_index: PPTypes.INT_GPU, DEPOSIT_RESOLUTION: PPTypes.VEC2i, VIS_RESOLUTION: PPTypes.VEC2i, TRACE_RESOLUTION: PPTypes.VEC2i, deposit_field: ti.template(),trace_field: ti.template(), vis_field: ti.template()):
         for x, y in ti.ndrange(vis_field.shape[0], vis_field.shape[1]):
             deposit_val = deposit_field[x * DEPOSIT_RESOLUTION[0] // VIS_RESOLUTION[0], y * DEPOSIT_RESOLUTION[1] // VIS_RESOLUTION[1]][current_deposit_index]
             trace_val = trace_field[x * TRACE_RESOLUTION[0] // VIS_RESOLUTION[0], y * TRACE_RESOLUTION[1] // VIS_RESOLUTION[1]]
