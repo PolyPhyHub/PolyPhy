@@ -1,28 +1,20 @@
-from polyphy_functions import PPSimulation, PPPostSimulation, PPInternalData, PPConfig, PPInputData_2DDiscrete
+from polyphy_core import *
 from kernels import Kernels
 import argparse
 from numpy.random import default_rng
 import taichi as ti
 
 class PolyPhy:
-    def __init__(self):
-        self.parse_args()
-        ti.init(arch=ti.cpu)
-        self.rng = default_rng()
-        self.ppInputData = PPInputData_2DDiscrete('data/csv/sample_2D_linW.csv',self.rng)
-        self.ppConfig = PPConfig(self.ppInputData)
-        self.batch_mode = False
-        self.num_iterations = -1
-        self.parse_values()
-        self.kernels = Kernels()
-        self.ppInternalData = PPInternalData(self.rng,self.kernels,self.ppConfig)
 
     def start_simulation(self):
-        PPSimulation(self.ppInternalData,self.batch_mode,self.num_iterations)
-        PPPostSimulation(self.ppInternalData)
+        ## specific implementation has to create the following classes defined for that pipeline
+        ## PPSimulation(self.ppInternalData,self.batch_mode,self.num_iterations)
+        ## PPPostSimulation(self.ppInternalData)
+        pass
 
     def parse_args(self):
         parser = argparse.ArgumentParser(description="PolyPhy")
+        parser.add_argument('-f', '--input-file', type=str, help="Main input data file (string relative to the root directory)")
         parser.add_argument('-b', '--batch-mode', action='store_true', help="Enable batch mode (run simulations in batch mode)")
         parser.add_argument('-n', '--num-iterations', type=int, help="Number of iterations (specify the number of simulation iterations)")
         parser.add_argument('-d', '--sensing-dist', type=float, help="Sensing distance (set the agent's sensing distance in pixels)")
@@ -48,9 +40,16 @@ class PolyPhy:
         self.args = parser.parse_args()
     
     def parse_values(self):
+        if self.args.input_file:
+            self.ppConfig.setter("input_file",self.args.input_file)
+            if self.args.input_file:
+                self.input_file = str(self.args.input_file)
+            else:
+                self.input_file = ''
+                raise AssertionError("Please specify the main input data file (string relative to the root directory)")
         if self.args.batch_mode:
             self.batch_mode = True
-            print("Batch mode enabled!!!")
+            print("Batch mode activated!")
             if self.args.num_iterations:
                 self.num_iterations = int(self.args.num_iterations)
                 print(f"Number of iterations: {self.args.num_iterations}")
@@ -107,5 +106,4 @@ class PolyPhy:
                 self.ppConfig.setter("agent_boundary_handling",PPConfig.EnumAgentBoundaryHandling.REINIT_CENTER)
             elif self.args.agent_boundary_handling == "re-initialize-randomly":
                 self.ppConfig.setter("agent_boundary_handling",PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY)
-
-PolyPhy().start_simulation()
+                
