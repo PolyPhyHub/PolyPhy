@@ -62,16 +62,20 @@ class PPUtils:
         PPUtils.console_log_functions.get(level, PPUtils.console_logger.info)(res)
 
 class PPTypes:
-    ## TODO (low priority): impletement and test float 16 and 64
+    ## TODO: impletement and test float 16 and 64
+    ## (int data don't occupy significant memory
+    ## so no need to optimize unless explicitly needed)
     FLOAT_CPU = np.float32
-    INT_CPU = np.int32
     FLOAT_GPU = ti.f32
+    INT_CPU = np.int32
     INT_GPU = ti.i32
 
     VEC2i = ti.types.vector(2, INT_GPU)
     VEC3i = ti.types.vector(3, INT_GPU)
+    VEC4i = ti.types.vector(4, INT_GPU)
     VEC2f = ti.types.vector(2, FLOAT_GPU)
     VEC3f = ti.types.vector(3, FLOAT_GPU)
+    VEC4f = ti.types.vector(4, FLOAT_GPU)
 
     @staticmethod
     def set_precision(float_precision):
@@ -125,11 +129,13 @@ class PPConfig:
     ## Simulation-wide constants and defaults
     N_DATA_DEFAULT = 1000
     N_AGENTS_DEFAULT = 1000000
-    DOMAIN_SIZE_DEFAULT = (100.0, 100.0)
+    DOMAIN_SIZE_DEFAULT = 100.0
     TRACE_RESOLUTION_MAX = 1400
     DEPOSIT_DOWNSCALING_FACTOR = 1
     MAX_DEPOSIT = 10.0
     DOMAIN_MARGIN = 0.05
+    RAY_EPSILON = 1.0e-3
+    VIS_RESOLUTION = (1280, 720)
 
     ## Input files
     input_file = ''
@@ -173,12 +179,14 @@ class PPConfig_2DDiscrete(PPConfig):
     def __init__(self):
         super()
 
-    def register_data(self,ppData):
+    def register_data(self, ppData):
         self.ppData = ppData
         self.DATA_TO_AGENTS_RATIO = PPTypes.FLOAT_CPU(ppData.N_DATA) / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]])
         self.TRACE_RESOLUTION = PPTypes.INT_CPU((PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX, PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX))
         self.DEPOSIT_RESOLUTION = (self.TRACE_RESOLUTION[0] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[1] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR)
+
+        ## Check if these are set and if not give them decent initial estimates
         if self.sense_distance < 1.e-4:
             self.sense_distance = 0.005 * self.DOMAIN_SIZE_MAX
         if self.step_size < 1.e-5:
@@ -192,7 +200,37 @@ class PPConfig_2DDiscrete(PPConfig):
         PPUtils.logToStdOut('info','Trace grid resolution:', self.TRACE_RESOLUTION)
         PPUtils.logToStdOut('info','Deposit grid resolution:', self.DEPOSIT_RESOLUTION)
 
+class PPConfig_3DDiscrete(PPConfig):
+    def __init__(self):
+        super()
+
+    def register_data(self, ppData):
+        self.ppData = ppData
+        self.DATA_TO_AGENTS_RATIO = PPTypes.FLOAT_CPU(ppData.N_DATA) / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
+        self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1], ppData.DOMAIN_SIZE[2]])
+        self.TRACE_RESOLUTION = PPTypes.INT_CPU((\
+                PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX,\
+                PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX,\
+                PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[2] / self.DOMAIN_SIZE_MAX))
+        self.DEPOSIT_RESOLUTION = (self.TRACE_RESOLUTION[0] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[1] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[2] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR)
+
+        ## Check if these are set and if not give them decent initial estimates
+        if self.sense_distance < 1.e-4:
+            self.sense_distance = 0.005 * self.DOMAIN_SIZE_MAX
+        if self.step_size < 1.e-5:
+            self.step_size = 0.0005 * self.DOMAIN_SIZE_MAX
+        if self.data_deposit < -1.e-4:
+            self.data_deposit = 0.1 * PPConfig.MAX_DEPOSIT
+        if self.agent_deposit < -1.e-5:
+            self.agent_deposit = self.data_deposit * self.DATA_TO_AGENTS_RATIO
+        self.VIS_RESOLUTION = self.TRACE_RESOLUTION
+        self.input_file = ppData.input_file
+        PPUtils.logToStdOut('info','Trace grid resolution:', self.TRACE_RESOLUTION)
+        PPUtils.logToStdOut('info','Deposit grid resolution:', self.DEPOSIT_RESOLUTION)
+        PPUtils.logToStdOut('info','Vis resolution:', self.VIS_RESOLUTION)
+
 class PPInputData:
+    ## TODO: determine ROOT automatically
     ROOT = '../../../'
     input_file = ''
 
@@ -229,7 +267,6 @@ class PPInputData:
         self.__print_simulation_data_stats__()
 
 class PPInputData_2DDiscrete(PPInputData):
-    ## TODO: determine ROOT automatically
     ## TODO: load datasets from specified file + type
     
     def __load_from_file__(self):
@@ -250,13 +287,43 @@ class PPInputData_2DDiscrete(PPInputData):
         self.AVG_WEIGHT = 10.0
         self.N_DATA = PPConfig.N_DATA_DEFAULT
         self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
-        self.DOMAIN_SIZE = PPConfig.DOMAIN_SIZE_DEFAULT
+        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
         self.DOMAIN_MIN = (0.0, 0.0)
-        self.DOMAIN_MAX = PPConfig.DOMAIN_SIZE_DEFAULT
+        self.DOMAIN_MAX = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
         self.data = np.zeros(shape=(self.N_DATA, 3), dtype = PPTypes.FLOAT_CPU)
         self.data[:, 0] = rng.normal(loc = self.DOMAIN_MIN[0] + 0.5 * self.DOMAIN_MAX[0], scale = 0.13 * self.DOMAIN_SIZE[0], size = self.N_DATA)
         self.data[:, 1] = rng.normal(loc = self.DOMAIN_MIN[1] + 0.5 * self.DOMAIN_MAX[1], scale = 0.13 * self.DOMAIN_SIZE[1], size = self.N_DATA)
-        self.data[:, 2] = np.mean(self.data[:,2])    
+        self.data[:, 2] = np.mean(self.data[:,2])
+
+class PPInputData_3DDiscrete(PPInputData):
+    ## TODO: load datasets from specified file + type
+    
+    def __load_from_file__(self):
+        PPUtils.logToStdOut("info",'Loading input file... ' + self.ROOT + self.input_file, self.DOMAIN_MIN)
+        self.data = np.loadtxt(self.ROOT + self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
+        self.N_DATA = self.data.shape[0]
+        self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
+        self.domain_min = (np.min(self.data[:,0]), np.min(self.data[:,1]), np.min(self.data[:,2]))
+        self.domain_max = (np.max(self.data[:,0]), np.max(self.data[:,1]), np.max(self.data[:,2]))
+        self.domain_size = np.subtract(self.domain_max, self.domain_min)
+        self.DOMAIN_MIN = (self.domain_min[0] - PPConfig.DOMAIN_MARGIN * self.domain_size[0], self.domain_min[1] - PPConfig.DOMAIN_MARGIN * self.domain_size[1], self.domain_min[2] - PPConfig.DOMAIN_MARGIN * self.domain_size[2])
+        self.DOMAIN_MAX = (self.domain_max[0] + PPConfig.DOMAIN_MARGIN * self.domain_size[0], self.domain_max[1] + PPConfig.DOMAIN_MARGIN * self.domain_size[1], self.domain_max[2] + PPConfig.DOMAIN_MARGIN * self.domain_size[2])
+        self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
+        self.AVG_WEIGHT = np.mean(self.data[:,3])
+
+    def __generate_test_data__(self,rng):
+        PPUtils.logToStdOut("info",'Generating synthetic testing dataset...')
+        self.AVG_WEIGHT = 10.0
+        self.N_DATA = PPConfig.N_DATA_DEFAULT
+        self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
+        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
+        self.DOMAIN_MIN = (0.0, 0.0, 0.0)
+        self.DOMAIN_MAX = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
+        self.data = np.zeros(shape=(self.N_DATA, 4), dtype = PPTypes.FLOAT_CPU)
+        self.data[:, 0] = rng.normal(loc = self.DOMAIN_MIN[0] + 0.5 * self.DOMAIN_MAX[0], scale = 0.15 * self.DOMAIN_SIZE[0], size = self.N_DATA)
+        self.data[:, 1] = rng.normal(loc = self.DOMAIN_MIN[1] + 0.5 * self.DOMAIN_MAX[1], scale = 0.15 * self.DOMAIN_SIZE[1], size = self.N_DATA)
+        self.data[:, 2] = rng.normal(loc = self.DOMAIN_MIN[2] + 0.5 * self.DOMAIN_MAX[2], scale = 0.15 * self.DOMAIN_SIZE[2], size = self.N_DATA)
+        self.data[:, 3] = self.AVG_WEIGHT
 
 class PPInternalData:
     def __init_internal_data__(self,kernels):
@@ -324,10 +391,58 @@ class PPInternalData_2DDiscrete(PPInternalData):
         self.ppKernels = ppKernels
         self.__init_internal_data__(ppKernels)
 
+class PPInternalData_3DDiscrete(PPInternalData):
+    def __init_internal_data__(self, ppKernels):
+        ## Initialize GPU fields
+        self.data_field.from_numpy(self.ppConfig.ppData.data)
+        self.agents_field.from_numpy(self.agents)
+        ppKernels.zero_field(self.deposit_field)
+        ppKernels.zero_field(self.trace_field)
+        ppKernels.zero_field(self.vis_field)
+    
+    ## Store current deposit and trace fields
+    def store_fit(self):
+        if not os.path.exists(self.ppConfig.ppData.ROOT + "data/fits/"):
+            os.makedirs(self.ppConfig.ppData.ROOT + "data/fits/")
+        current_stamp = PPUtils.stamp()
+        PPUtils.logToStdOut("info",'Storing solution data in data/fits/')
+        deposit = self.deposit_field.to_numpy()
+        np.save(self.ppConfig.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
+        trace = self.trace_field.to_numpy()
+        np.save(self.ppConfig.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
+        return current_stamp, deposit, trace
+    
+    def __init__(self, rng, ppKernels, ppConfig):
+        self.agents = np.zeros(shape=(ppConfig.ppData.N_AGENTS, 6), dtype = PPTypes.FLOAT_CPU)
+        self.agents[:, 0] = rng.uniform(low = ppConfig.ppData.DOMAIN_MIN[0] + 0.001, high = ppConfig.ppData.DOMAIN_MAX[0] - 0.001, size = ppConfig.ppData.N_AGENTS)
+        self.agents[:, 1] = rng.uniform(low = ppConfig.ppData.DOMAIN_MIN[1] + 0.001, high = ppConfig.ppData.DOMAIN_MAX[1] - 0.001, size = ppConfig.ppData.N_AGENTS)
+        self.agents[:, 2] = rng.uniform(low = ppConfig.ppData.DOMAIN_MIN[2] + 0.001, high = ppConfig.ppData.DOMAIN_MAX[2] - 0.001, size = ppConfig.ppData.N_AGENTS)
+        self.agents[:, 3] = np.arccos(2.0 * np.array(rng.uniform(low = 0.0, high = 1.0, size = ppConfig.ppData.N_AGENTS)) - 1.0) # zenith angle
+        self.agents[:, 4] = rng.uniform(low = 0.0, high = 2.0 * np.pi, size = ppConfig.ppData.N_AGENTS) # azimuth angle
+        self.agents[:, 5] = 1.0
+        PPUtils.logToStdOut("info",'Agent sample:', self.agents[0, :])
+
+        self.data_field = ti.Vector.field(n = 4, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.ppData.N_DATA)
+        self.agents_field = ti.Vector.field(n = 6, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.ppData.N_AGENTS)
+        self.deposit_field = ti.Vector.field(n = 2, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.DEPOSIT_RESOLUTION)
+        self.trace_field = ti.Vector.field(n = 1, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.TRACE_RESOLUTION)
+        self.vis_field = ti.Vector.field(n = 3, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.VIS_RESOLUTION)
+        PPUtils.logToFile("info",'Total GPU memory allocated:', PPTypes.INT_CPU(4 * (\
+            self.data_field.shape[0] * 4 + \
+            self.agents_field.shape[0] * 6 + \
+            self.deposit_field.shape[0] * self.deposit_field.shape[1] * 2 + \
+            self.trace_field.shape[0] * self.trace_field.shape[1] * 1 + \
+            self.vis_field.shape[0] * self.vis_field.shape[1] * 3 \
+            ) / 2 ** 20), 'MB')
+
+        self.ppConfig = ppConfig
+        self.ppKernels = ppKernels
+        self.__init_internal_data__(ppKernels)
+
 class PPSimulation:
     def __drawGUI__(self, window, ppConfig, ppData):
         pass
-    def __init__(self, ppInternalData, batch_mode, num_iterations):
+    def __init__(self, ppInternalData, ppConfig, batch_mode, num_iterations):
         pass
 
 class PPSimulation_2DDiscrete(PPSimulation):
@@ -422,7 +537,7 @@ class PPSimulation_2DDiscrete(PPSimulation):
         window.GUI.text("Right mouse: continuous mode, place a data point at every iteration")
         window.GUI.end()
 
-    def __init__(self, ppInternalData, batch_mode=False, num_iterations=-1):
+    def __init__(self, ppInternalData, ppConfig, batch_mode=False, num_iterations=-1):
         self.current_deposit_index = 0
         self.data_edit_index = 0
 
@@ -461,45 +576,53 @@ class PPSimulation_2DDiscrete(PPSimulation):
                     if window.is_pressed(ti.ui.RMB):
                         self.data_edit_index = ppInternalData.edit_data(self.data_edit_index,window)
                     if not self.hide_UI:
-                        self.__drawGUI__(window,ppInternalData.ppConfig,ppInternalData.ppConfig.ppData)
+                        self.__drawGUI__(window, ppConfig, ppConfig.ppData)
             
                 ## Main simulation sequence
                 if self.do_simulate:
-                    ppInternalData.ppKernels.data_step_2D_discrete(ppInternalData.ppConfig.data_deposit, self.current_deposit_index, ppInternalData.ppConfig.ppData.DOMAIN_MIN, ppInternalData.ppConfig.ppData.DOMAIN_MAX, ppInternalData.ppConfig.DEPOSIT_RESOLUTION,ppInternalData.data_field, ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.agent_step_2D_discrete(ppInternalData.ppConfig.sense_distance,\
-                        ppInternalData.ppConfig.sense_angle,\
-                        ppInternalData.ppConfig.steering_rate,\
-                        ppInternalData.ppConfig.sampling_exponent,\
-                        ppInternalData.ppConfig.step_size,\
-                        ppInternalData.ppConfig.agent_deposit,\
+                    ppInternalData.ppKernels.data_step_2D_discrete(ppConfig.data_deposit, self.current_deposit_index, ppConfig.ppData.DOMAIN_MIN, ppConfig.ppData.DOMAIN_MAX, ppConfig.DEPOSIT_RESOLUTION, ppInternalData.data_field, ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.agent_step_2D_discrete(ppConfig.sense_distance,\
+                        ppConfig.sense_angle,\
+                        ppConfig.steering_rate,\
+                        ppConfig.sampling_exponent,\
+                        ppConfig.step_size,\
+                        ppConfig.agent_deposit,\
                         self.current_deposit_index,\
-                        ppInternalData.ppConfig.distance_sampling_distribution,\
-                        ppInternalData.ppConfig.directional_sampling_distribution,\
-                        ppInternalData.ppConfig.directional_mutation_type,\
-                        ppInternalData.ppConfig.deposit_fetching_strategy,\
-                        ppInternalData.ppConfig.agent_boundary_handling,\
-                        ppInternalData.ppConfig.ppData.N_DATA,\
-                        ppInternalData.ppConfig.ppData.N_AGENTS,\
-                        ppInternalData.ppConfig.ppData.DOMAIN_SIZE,\
-                        ppInternalData.ppConfig.ppData.DOMAIN_MIN,\
-                        ppInternalData.ppConfig.ppData.DOMAIN_MAX,\
-                        ppInternalData.ppConfig.DEPOSIT_RESOLUTION,\
-                        ppInternalData.ppConfig.TRACE_RESOLUTION,\
+                        ppConfig.distance_sampling_distribution,\
+                        ppConfig.directional_sampling_distribution,\
+                        ppConfig.directional_mutation_type,\
+                        ppConfig.deposit_fetching_strategy,\
+                        ppConfig.agent_boundary_handling,\
+                        ppConfig.ppData.N_DATA,\
+                        ppConfig.ppData.N_AGENTS,\
+                        ppConfig.ppData.DOMAIN_SIZE,\
+                        ppConfig.ppData.DOMAIN_MIN,\
+                        ppConfig.ppData.DOMAIN_MAX,\
+                        ppConfig.DEPOSIT_RESOLUTION,\
+                        ppConfig.TRACE_RESOLUTION,\
                         ppInternalData.agents_field,\
                         ppInternalData.deposit_field,\
                         ppInternalData.trace_field
                         )
-                    ppInternalData.ppKernels.deposit_relaxation_step_2D_discrete(ppInternalData.ppConfig.deposit_attenuation, self.current_deposit_index,ppInternalData.ppConfig.DEPOSIT_RESOLUTION,ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.trace_relaxation_step_2D_discrete(ppInternalData.ppConfig.trace_attenuation, ppInternalData.trace_field)
+                    ppInternalData.ppKernels.deposit_relaxation_step_2D_discrete(ppConfig.deposit_attenuation, self.current_deposit_index, ppConfig.DEPOSIT_RESOLUTION, ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.trace_relaxation_step_2D_discrete(ppConfig.trace_attenuation, ppInternalData.trace_field)
                     self.current_deposit_index = 1 - self.current_deposit_index
             
                 ## Render visualization
-                ppInternalData.ppKernels.render_visualization_2D_discrete(ppInternalData.ppConfig.deposit_vis, ppInternalData.ppConfig.trace_vis, self.current_deposit_index, ppInternalData.ppConfig.DEPOSIT_RESOLUTION, ppInternalData.ppConfig.VIS_RESOLUTION, ppInternalData.ppConfig.TRACE_RESOLUTION, ppInternalData.deposit_field,ppInternalData.trace_field, ppInternalData.vis_field)
+                ppInternalData.ppKernels.render_visualization_2D_discrete(ppConfig.deposit_vis,\
+                    ppConfig.trace_vis,\
+                    self.current_deposit_index,\
+                    ppConfig.DEPOSIT_RESOLUTION,\
+                    ppConfig.VIS_RESOLUTION,\
+                    ppConfig.TRACE_RESOLUTION,\
+                    ppInternalData.deposit_field,\
+                    ppInternalData.trace_field,\
+                    ppInternalData.vis_field)
                 
                 if batch_mode is False:
                     canvas.set_image(ppInternalData.vis_field)
                     if self.do_screenshot:
-                        window.save_image(ppInternalData.ppConfig.ppData.ROOT + 'capture/screenshot_' + PPUtils.stamp() + '.png') ## Must appear before window.show() call
+                        window.save_image(ppConfig.ppData.ROOT + 'capture/screenshot_' + PPUtils.stamp() + '.png') ## Must appear before window.show() call
                         self.do_screenshot = False
                     window.show()
                 if self.do_export:
@@ -507,6 +630,226 @@ class PPSimulation_2DDiscrete(PPSimulation):
                     self.do_export = False
                 if self.do_quit:
                     break
+                
+            if batch_mode is False:    
+                window.destroy()
+
+class PPSimulation_3DDiscrete(PPSimulation):
+    def __drawGUI__(self, window, ppConfig, ppData):
+        ## Draw main interactive control GUI
+        window.GUI.begin('Main', 0.01, 0.01, 0.32 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[0]), 0.85 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
+        window.GUI.text("MCPM parameters:")
+        ppConfig.sense_distance = window.GUI.slider_float('Sensing dist', ppConfig.sense_distance, 0.1, 0.05 * ppConfig.DOMAIN_SIZE_MAX)
+        ppConfig.sense_angle = window.GUI.slider_float('Sensing angle', ppConfig.sense_angle, 0.01, 0.5 * np.pi)
+        ppConfig.sampling_exponent = window.GUI.slider_float('Sampling expo', ppConfig.sampling_exponent, 0.1, 5.0)
+        ppConfig.step_size = window.GUI.slider_float('Step size', ppConfig.step_size, 0.0, 0.005 * ppConfig.DOMAIN_SIZE_MAX)
+        ppConfig.data_deposit = window.GUI.slider_float('Data deposit', ppConfig.data_deposit, 0.0, ppConfig.MAX_DEPOSIT)
+        ppConfig.agent_deposit = window.GUI.slider_float('Agent deposit', ppConfig.agent_deposit, 0.0, 10.0 * ppConfig.MAX_DEPOSIT * ppConfig.DATA_TO_AGENTS_RATIO)
+        ppConfig.deposit_attenuation = window.GUI.slider_float('Deposit attn', ppConfig.deposit_attenuation, 0.8, 0.999)
+        ppConfig.trace_attenuation = window.GUI.slider_float('Trace attn', ppConfig.trace_attenuation, 0.8, 0.999)
+        ppConfig.deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(ppConfig.deposit_vis, 10.0), -3.0, 3.0))
+        ppConfig.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(ppConfig.trace_vis, 10.0), -3.0, 3.0))
+        ppConfig.n_steps_f = window.GUI.slider_float('N ray steps', ppConfig.n_steps_f, 10.0, 200.0)
+
+        window.GUI.text("Distance distribution:")
+        if window.GUI.checkbox("Constant", ppConfig.distance_sampling_distribution == ppConfig.EnumDistanceSamplingDistribution.CONSTANT):
+            ppConfig.distance_sampling_distribution = ppConfig.EnumDistanceSamplingDistribution.CONSTANT
+        if window.GUI.checkbox("Exponential", ppConfig.distance_sampling_distribution == ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL):
+            ppConfig.distance_sampling_distribution = ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL
+        if window.GUI.checkbox("Maxwell-Boltzmann", ppConfig.distance_sampling_distribution == ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
+            ppConfig.distance_sampling_distribution = ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
+        window.GUI.text("Directional distribution:")
+        if window.GUI.checkbox("Discrete", ppConfig.directional_sampling_distribution == ppConfig.EnumDirectionalSamplingDistribution.DISCRETE):
+            ppConfig.directional_sampling_distribution = ppConfig.EnumDirectionalSamplingDistribution.DISCRETE
+        if window.GUI.checkbox("Cone", ppConfig.directional_sampling_distribution == ppConfig.EnumDirectionalSamplingDistribution.CONE):
+            ppConfig.directional_sampling_distribution = ppConfig.EnumDirectionalSamplingDistribution.CONE
+        window.GUI.text("Directional mutation:")
+        if window.GUI.checkbox("Deterministic", ppConfig.directional_mutation_type == ppConfig.EnumDirectionalMutationType.DETERMINISTIC):
+            ppConfig.directional_mutation_type = ppConfig.EnumDirectionalMutationType.DETERMINISTIC
+        if window.GUI.checkbox("Stochastic", ppConfig.directional_mutation_type == ppConfig.EnumDirectionalMutationType.PROBABILISTIC):
+            ppConfig.directional_mutation_type = ppConfig.EnumDirectionalMutationType.PROBABILISTIC
+        window.GUI.text("Deposit fetching:")
+        if window.GUI.checkbox("Nearest neighbor", ppConfig.deposit_fetching_strategy == ppConfig.EnumDepositFetchingStrategy.NN):
+            ppConfig.deposit_fetching_strategy = ppConfig.EnumDepositFetchingStrategy.NN
+        if window.GUI.checkbox("Noise-perturbed NN", ppConfig.deposit_fetching_strategy == ppConfig.EnumDepositFetchingStrategy.NN_PERTURBED):
+            ppConfig.deposit_fetching_strategy = ppConfig.EnumDepositFetchingStrategy.NN_PERTURBED
+        window.GUI.text("Agent boundary handling:")
+        if window.GUI.checkbox("Wrap around", ppConfig.agent_boundary_handling == ppConfig.EnumAgentBoundaryHandling.WRAP):
+            ppConfig.agent_boundary_handling = ppConfig.EnumAgentBoundaryHandling.WRAP
+        if window.GUI.checkbox("Reinitialize center", ppConfig.agent_boundary_handling == ppConfig.EnumAgentBoundaryHandling.REINIT_CENTER):
+            ppConfig.agent_boundary_handling = ppConfig.EnumAgentBoundaryHandling.REINIT_CENTER
+        if window.GUI.checkbox("Reinitialize randomly", ppConfig.agent_boundary_handling == ppConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
+            ppConfig.agent_boundary_handling = ppConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY
+
+        window.GUI.text("Misc controls:")
+        self.do_simulate = window.GUI.checkbox("Run simulation", self.do_simulate)
+        self.do_export = self.do_export | window.GUI.button('Export fit')
+        self.do_screenshot = self.do_screenshot | window.GUI.button('Screenshot')
+        self.do_quit = self.do_quit | window.GUI.button('Quit')
+        window.GUI.end()
+
+        ## Help window
+        ## Do not exceed prescribed line length of 120 characters, there is no text wrapping in Taichi GUI
+        window.GUI.begin('Help', 0.35 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
+        window.GUI.text("Welcome to PolyPhy 3D GUI variant written by researchers at UCSC/OSPO with the help of numerous external contributors\n(https://github.com/PolyPhyHub). PolyPhy implements MCPM, an agent-based, stochastic, pattern forming algorithm designed\nby Elek et al, inspired by Physarum polycephalum slime mold. Below is a quick reference guide explaining the parameters\nand features available in the interface. The reference as well as other panels can be hidden using the arrow button, moved,\nand rescaled.")
+        window.GUI.text("")
+        window.GUI.text("PARAMETERS")
+        window.GUI.text("Sensing dist: average distance in world units at which agents probe the deposit")
+        window.GUI.text("Sensing angle: angle in radians within which agents probe deposit (left and right concentric to movement direction)")
+        window.GUI.text("Sampling expo: sampling sharpness (or 'acuteness' or 'temperature') which tunes the directional mutation behavior")
+        window.GUI.text("Step size: average size of the step in world units which agents make in each iteration")
+        window.GUI.text("Data deposit: amount of marker 'deposit' that *data* emit at every iteration")
+        window.GUI.text("Agent deposit: amount of marker 'deposit' that *agents* emit at every iteration")
+        window.GUI.text("Deposit attn: attenuation (or 'decay') rate of the diffusing combined agent+data deposit field")
+        window.GUI.text("Trace attn: attenuation (or 'decay') of the non-diffusing agent trace field")
+        window.GUI.text("Deposit vis: visualization intensity of the green deposit field (logarithmic)")
+        window.GUI.text("Trace vis: visualization intensity of the red trace field (logarithmic)")
+        window.GUI.text("")
+        window.GUI.text("OPTIONS")
+        window.GUI.text("Distance distribution: strategy for sampling the sensing and movement distances")
+        window.GUI.text("Directional distribution: strategy for sampling the sensing and movement directions")
+        window.GUI.text("Directional mutation: strategy for selecting the new movement direction")
+        window.GUI.text("Deposit fetching: access behavior when sampling the deposit field")
+        window.GUI.text("Agent boundary handling: what do agents do if they reach the boundary of the simulation domain")
+        window.GUI.text("")
+        window.GUI.text("NAVIGATION")
+        window.GUI.text("Right Mouse: rotate camera")
+        window.GUI.text("Middle Mouse: zoom camera")
+        window.GUI.text("Up/Down Arrow: zoom camera")
+        window.GUI.text("")
+        window.GUI.text("VISUALIZATION")
+        window.GUI.text("Renders 2 types of information superimposed on top of each other: *green* deposit field and *red-purple* trace field.")
+        window.GUI.text("Yellow-white signifies areas where deposit and trace overlap (relative intensities are controlled by the T/D vis params)")
+        window.GUI.text("Screenshots can be saved in the /capture folder.")
+        window.GUI.text("")
+        window.GUI.text("DATA")
+        window.GUI.text("Input data are loaded from the specified folder in /data. Currently the CSV format is supported.")
+        window.GUI.text("Reconstruction data are exported to /data/fits using the Export fit button.")
+        window.GUI.end()
+        
+    def __init__(self, ppInternalData, ppConfig, batch_mode=False, num_iterations=-1):
+        self.current_deposit_index = 0
+        self.data_edit_index = 0
+
+        self.do_export = False
+        self.do_screenshot = False
+        self.do_quit = False
+        self.do_simulate = True
+        self.hide_UI = False
+
+        camera_distance = 3.0 * ppConfig.DOMAIN_SIZE_MAX
+        camera_polar = 0.5 * np.pi
+        camera_azimuth = 0.0
+        last_MMB = [-1.0, -1.0]
+        last_RMB = [-1.0, -1.0]
+
+        ## Check if file exists
+        if os.path.exists("/tmp/flag") == False:
+            if batch_mode is False:
+                window = ti.ui.Window('PolyPhy', (ppInternalData.vis_field.shape[0], ppInternalData.vis_field.shape[1]), show_window = True)
+                window.show()
+                canvas = window.get_canvas()
+            
+            curr_iteration = 0
+            ## Main simulation and rendering loop
+            while window.running if 'window' in locals() else True:
+                if batch_mode is True:
+                    ## Handle progress monitor
+                    curr_iteration += 1
+                    if curr_iteration > num_iterations:
+                        break
+                    if (num_iterations % curr_iteration) == 0:
+                        PPUtils.logToStdOut("info",'Running MCPM... iteration', curr_iteration, '/', num_iterations)
+                else: # batch_mode is False
+                    ## Handle controls
+                    if window.get_event(ti.ui.PRESS):
+                        if window.event.key == 'e': self.do_export = True
+                        if window.event.key == 's': self.do_screenshot = True
+                        if window.event.key == 'h': self.hide_UI = not self.hide_UI
+                        if window.event.key in [ti.ui.ESCAPE]: self.do_quit = True
+
+                    ## Handle camera control: rotation
+                    mouse_pos = window.get_cursor_pos()
+                    if window.is_pressed(ti.ui.RMB):
+                        if last_RMB[0] < 0.0:
+                            last_RMB = mouse_pos
+                        else:
+                            delta_RMB = np.subtract(mouse_pos, last_RMB)
+                            last_RMB = mouse_pos
+                            camera_azimuth -= 5.0 * delta_RMB[0]
+                            camera_polar += 3.5 * delta_RMB[1]
+                            camera_polar = np.min([np.max([1.0e-2, camera_polar]), np.pi-1.0e-2])
+                    else:
+                        last_RMB = [-1.0, -1.0]
+
+                    ## Handle camera control: zooming
+                    if window.is_pressed(ti.ui.MMB):
+                        if last_MMB[0] < 0.0:
+                            last_MMB = mouse_pos
+                        else:
+                            delta_MMB = np.subtract(mouse_pos, last_MMB)
+                            last_MMB = mouse_pos
+                            camera_distance -= 5.0 * ppConfig.DOMAIN_SIZE_MAX * delta_MMB[1]
+                            camera_distance = np.max([camera_distance, 0.85 * ppConfig.DOMAIN_SIZE_MAX])
+                    else:
+                        last_MMB = [-1.0, -1.0]
+
+                    if not self.hide_UI:
+                        self.__drawGUI__(window, ppConfig, ppConfig.ppData)
+            
+                ## Main simulation sequence
+                if self.do_simulate:
+                    ppInternalData.ppKernels.data_step_2D_discrete(ppConfig.data_deposit, self.current_deposit_index, ppConfig.ppData.DOMAIN_MIN, ppConfig.ppData.DOMAIN_MAX, ppConfig.DEPOSIT_RESOLUTION, ppInternalData.data_field, ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.agent_step_2D_discrete(ppConfig.sense_distance,\
+                        ppConfig.sense_angle,\
+                        ppConfig.steering_rate,\
+                        ppConfig.sampling_exponent,\
+                        ppConfig.step_size,\
+                        ppConfig.agent_deposit,\
+                        self.current_deposit_index,\
+                        ppConfig.distance_sampling_distribution,\
+                        ppConfig.directional_sampling_distribution,\
+                        ppConfig.directional_mutation_type,\
+                        ppConfig.deposit_fetching_strategy,\
+                        ppConfig.agent_boundary_handling,\
+                        ppConfig.ppData.N_DATA,\
+                        ppConfig.ppData.N_AGENTS,\
+                        ppConfig.ppData.DOMAIN_SIZE,\
+                        ppConfig.ppData.DOMAIN_MIN,\
+                        ppConfig.ppData.DOMAIN_MAX,\
+                        ppConfig.DEPOSIT_RESOLUTION,\
+                        ppConfig.TRACE_RESOLUTION,\
+                        ppInternalData.agents_field,\
+                        ppInternalData.deposit_field,\
+                        ppInternalData.trace_field
+                        )
+                    ppInternalData.ppKernels.deposit_relaxation_step_2D_discrete(ppConfig.deposit_attenuation, self.current_deposit_index, ppConfig.DEPOSIT_RESOLUTION, ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.trace_relaxation_step_2D_discrete(ppConfig.trace_attenuation, ppInternalData.trace_field)
+                    self.current_deposit_index = 1 - self.current_deposit_index
+            
+                ## Render visualization
+                ppInternalData.ppKernels.render_visualization_2D_discrete(ppConfig.deposit_vis,\
+                    ppConfig.trace_vis,\
+                    self.current_deposit_index,\
+                    ppConfig.DEPOSIT_RESOLUTION,\
+                    ppConfig.VIS_RESOLUTION,\
+                    ppConfig.TRACE_RESOLUTION,\
+                    ppInternalData.deposit_field,\
+                    ppInternalData.trace_field,\
+                    ppInternalData.vis_field)
+                
+                if batch_mode is False:
+                    canvas.set_image(ppInternalData.vis_field)
+                    if self.do_screenshot:
+                        window.save_image(ppConfig.ppData.ROOT + 'capture/screenshot_' + PPUtils.stamp() + '.png') ## Must appear before window.show() call
+                        self.do_screenshot = False
+                    window.show()
+                if self.do_export:
+                    ppInternalData.store_fit()
+                    self.do_export = False
+                if self.do_quit:
+                    break
+
             if batch_mode is False:    
                 window.destroy()
 
@@ -518,3 +861,6 @@ class PPPostSimulation_2DDiscrete(PPPostSimulation):
     def __init__(self, ppInternalData):
         super().__init__(ppInternalData)
 
+class PPPostSimulation_3DDiscrete(PPPostSimulation):
+    def __init__(self, ppInternalData):
+        super().__init__(ppInternalData)
