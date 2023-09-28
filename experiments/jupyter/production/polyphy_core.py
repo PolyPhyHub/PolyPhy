@@ -92,6 +92,7 @@ class PPTypes:
             raise ValueError("Invalid float precision value. Supported values: float64, float32, float16")
 
 class PPConfig:
+    ## TODO load trace resolution as argument
     ## Distance sampling distribution for agents
     class EnumDistanceSamplingDistribution(IntEnum):
         CONSTANT = 0
@@ -130,12 +131,12 @@ class PPConfig:
     N_DATA_DEFAULT = 1000
     N_AGENTS_DEFAULT = 1000000
     DOMAIN_SIZE_DEFAULT = 100.0
-    TRACE_RESOLUTION_MAX = 1400
+    TRACE_RESOLUTION_MAX = 512
     DEPOSIT_DOWNSCALING_FACTOR = 1
     MAX_DEPOSIT = 10.0
     DOMAIN_MARGIN = 0.05
     RAY_EPSILON = 1.0e-3
-    VIS_RESOLUTION = (1280, 720)
+    VIS_RESOLUTION = (1440, 900)
 
     ## Input files
     input_file = ''
@@ -152,6 +153,7 @@ class PPConfig:
     agent_deposit = -1.0
     deposit_vis = 0.1
     trace_vis = 1.0
+    n_ray_steps = 50.0
 
     @staticmethod
     def set_value(constant_name, new_value):
@@ -181,9 +183,10 @@ class PPConfig_2DDiscrete(PPConfig):
 
     def register_data(self, ppData):
         self.ppData = ppData
+        self.TRACE_RESOLUTION_MAX = 1440
         self.DATA_TO_AGENTS_RATIO = PPTypes.FLOAT_CPU(ppData.N_DATA) / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]])
-        self.TRACE_RESOLUTION = PPTypes.INT_CPU((PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX, PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX))
+        self.TRACE_RESOLUTION = PPTypes.INT_CPU((PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX, PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX))
         self.DEPOSIT_RESOLUTION = (self.TRACE_RESOLUTION[0] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[1] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR)
 
         ## Check if these are set and if not give them decent initial estimates
@@ -206,12 +209,13 @@ class PPConfig_3DDiscrete(PPConfig):
 
     def register_data(self, ppData):
         self.ppData = ppData
+        self.TRACE_RESOLUTION_MAX = 512
         self.DATA_TO_AGENTS_RATIO = PPTypes.FLOAT_CPU(ppData.N_DATA) / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1], ppData.DOMAIN_SIZE[2]])
         self.TRACE_RESOLUTION = PPTypes.INT_CPU((\
-                PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX,\
-                PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX,\
-                PPTypes.FLOAT_CPU(PPConfig.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[2] / self.DOMAIN_SIZE_MAX))
+                PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX,\
+                PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX,\
+                PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[2] / self.DOMAIN_SIZE_MAX))
         self.DEPOSIT_RESOLUTION = (self.TRACE_RESOLUTION[0] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[1] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[2] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR)
 
         ## Check if these are set and if not give them decent initial estimates
@@ -223,7 +227,6 @@ class PPConfig_3DDiscrete(PPConfig):
             self.data_deposit = 0.1 * PPConfig.MAX_DEPOSIT
         if self.agent_deposit < -1.e-5:
             self.agent_deposit = self.data_deposit * self.DATA_TO_AGENTS_RATIO
-        self.VIS_RESOLUTION = self.TRACE_RESOLUTION
         self.input_file = ppData.input_file
         PPUtils.logToStdOut('info','Trace grid resolution:', self.TRACE_RESOLUTION)
         PPUtils.logToStdOut('info','Deposit grid resolution:', self.DEPOSIT_RESOLUTION)
@@ -308,6 +311,7 @@ class PPInputData_3DDiscrete(PPInputData):
         self.domain_size = np.subtract(self.domain_max, self.domain_min)
         self.DOMAIN_MIN = (self.domain_min[0] - PPConfig.DOMAIN_MARGIN * self.domain_size[0], self.domain_min[1] - PPConfig.DOMAIN_MARGIN * self.domain_size[1], self.domain_min[2] - PPConfig.DOMAIN_MARGIN * self.domain_size[2])
         self.DOMAIN_MAX = (self.domain_max[0] + PPConfig.DOMAIN_MARGIN * self.domain_size[0], self.domain_max[1] + PPConfig.DOMAIN_MARGIN * self.domain_size[1], self.domain_max[2] + PPConfig.DOMAIN_MARGIN * self.domain_size[2])
+        self.DOMAIN_CENTER = (0.5 * (self.DOMAIN_MIN[0] + self.DOMAIN_MAX[0]), 0.5 * (self.DOMAIN_MIN[1] + self.DOMAIN_MAX[1]), 0.5 * (self.DOMAIN_MIN[2] + self.DOMAIN_MAX[2]))
         self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
         self.AVG_WEIGHT = np.mean(self.data[:,3])
 
@@ -319,6 +323,7 @@ class PPInputData_3DDiscrete(PPInputData):
         self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
         self.DOMAIN_MIN = (0.0, 0.0, 0.0)
         self.DOMAIN_MAX = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
+        self.DOMAIN_CENTER = (0.5 * (self.DOMAIN_MIN[0] + self.DOMAIN_MAX[0]), 0.5 * (self.DOMAIN_MIN[1] + self.DOMAIN_MAX[1]), 0.5 * (self.DOMAIN_MIN[2] + self.DOMAIN_MAX[2]))
         self.data = np.zeros(shape=(self.N_DATA, 4), dtype = PPTypes.FLOAT_CPU)
         self.data[:, 0] = rng.normal(loc = self.DOMAIN_MIN[0] + 0.5 * self.DOMAIN_MAX[0], scale = 0.15 * self.DOMAIN_SIZE[0], size = self.N_DATA)
         self.data[:, 1] = rng.normal(loc = self.DOMAIN_MIN[1] + 0.5 * self.DOMAIN_MAX[1], scale = 0.15 * self.DOMAIN_SIZE[1], size = self.N_DATA)
@@ -379,7 +384,7 @@ class PPInternalData_2DDiscrete(PPInternalData):
         self.deposit_field = ti.Vector.field(n = 2, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.DEPOSIT_RESOLUTION)
         self.trace_field = ti.Vector.field(n = 1, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.TRACE_RESOLUTION)
         self.vis_field = ti.Vector.field(n = 3, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.VIS_RESOLUTION)
-        PPUtils.logToFile("info",'Total GPU memory allocated:', PPTypes.INT_CPU(4 * (\
+        PPUtils.logToStdOut("info",'Total GPU memory allocated:', PPTypes.INT_CPU(4 * (\
             self.data_field.shape[0] * 3 + \
             self.agents_field.shape[0] * 4 + \
             self.deposit_field.shape[0] * self.deposit_field.shape[1] * 2 + \
@@ -427,7 +432,7 @@ class PPInternalData_3DDiscrete(PPInternalData):
         self.deposit_field = ti.Vector.field(n = 2, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.DEPOSIT_RESOLUTION)
         self.trace_field = ti.Vector.field(n = 1, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.TRACE_RESOLUTION)
         self.vis_field = ti.Vector.field(n = 3, dtype = PPTypes.FLOAT_GPU, shape = ppConfig.VIS_RESOLUTION)
-        PPUtils.logToFile("info",'Total GPU memory allocated:', PPTypes.INT_CPU(4 * (\
+        PPUtils.logToStdOut("info",'Total GPU memory allocated:', PPTypes.INT_CPU(4 * (\
             self.data_field.shape[0] * 4 + \
             self.agents_field.shape[0] * 6 + \
             self.deposit_field.shape[0] * self.deposit_field.shape[1] * 2 + \
@@ -580,7 +585,13 @@ class PPSimulation_2DDiscrete(PPSimulation):
             
                 ## Main simulation sequence
                 if self.do_simulate:
-                    ppInternalData.ppKernels.data_step_2D_discrete(ppConfig.data_deposit, self.current_deposit_index, ppConfig.ppData.DOMAIN_MIN, ppConfig.ppData.DOMAIN_MAX, ppConfig.DEPOSIT_RESOLUTION, ppInternalData.data_field, ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.data_step_2D_discrete(ppConfig.data_deposit,\
+                        self.current_deposit_index,\
+                        ppConfig.ppData.DOMAIN_MIN,\
+                        ppConfig.ppData.DOMAIN_MAX,\
+                        ppConfig.DEPOSIT_RESOLUTION,\
+                        ppInternalData.data_field,\
+                        ppInternalData.deposit_field)
                     ppInternalData.ppKernels.agent_step_2D_discrete(ppConfig.sense_distance,\
                         ppConfig.sense_angle,\
                         ppConfig.steering_rate,\
@@ -598,25 +609,27 @@ class PPSimulation_2DDiscrete(PPSimulation):
                         ppConfig.ppData.DOMAIN_SIZE,\
                         ppConfig.ppData.DOMAIN_MIN,\
                         ppConfig.ppData.DOMAIN_MAX,\
-                        ppConfig.DEPOSIT_RESOLUTION,\
                         ppConfig.TRACE_RESOLUTION,\
+                        ppConfig.DEPOSIT_RESOLUTION,\
                         ppInternalData.agents_field,\
-                        ppInternalData.deposit_field,\
-                        ppInternalData.trace_field
-                        )
-                    ppInternalData.ppKernels.deposit_relaxation_step_2D_discrete(ppConfig.deposit_attenuation, self.current_deposit_index, ppConfig.DEPOSIT_RESOLUTION, ppInternalData.deposit_field)
+                        ppInternalData.trace_field,\
+                        ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.deposit_relaxation_step_2D_discrete(ppConfig.deposit_attenuation,\
+                        self.current_deposit_index,\
+                        ppConfig.DEPOSIT_RESOLUTION,\
+                        ppInternalData.deposit_field)
                     ppInternalData.ppKernels.trace_relaxation_step_2D_discrete(ppConfig.trace_attenuation, ppInternalData.trace_field)
                     self.current_deposit_index = 1 - self.current_deposit_index
             
                 ## Render visualization
-                ppInternalData.ppKernels.render_visualization_2D_discrete(ppConfig.deposit_vis,\
-                    ppConfig.trace_vis,\
+                ppInternalData.ppKernels.render_visualization_2D_discrete(ppConfig.trace_vis,\
+                    ppConfig.deposit_vis,\
                     self.current_deposit_index,\
+                    ppConfig.TRACE_RESOLUTION,\
                     ppConfig.DEPOSIT_RESOLUTION,\
                     ppConfig.VIS_RESOLUTION,\
-                    ppConfig.TRACE_RESOLUTION,\
-                    ppInternalData.deposit_field,\
                     ppInternalData.trace_field,\
+                    ppInternalData.deposit_field,\
                     ppInternalData.vis_field)
                 
                 if batch_mode is False:
@@ -630,7 +643,7 @@ class PPSimulation_2DDiscrete(PPSimulation):
                     self.do_export = False
                 if self.do_quit:
                     break
-                
+
             if batch_mode is False:    
                 window.destroy()
 
@@ -649,7 +662,7 @@ class PPSimulation_3DDiscrete(PPSimulation):
         ppConfig.trace_attenuation = window.GUI.slider_float('Trace attn', ppConfig.trace_attenuation, 0.8, 0.999)
         ppConfig.deposit_vis = math.pow(10.0, window.GUI.slider_float('Deposit vis', math.log(ppConfig.deposit_vis, 10.0), -3.0, 3.0))
         ppConfig.trace_vis = math.pow(10.0, window.GUI.slider_float('Trace vis', math.log(ppConfig.trace_vis, 10.0), -3.0, 3.0))
-        ppConfig.n_steps_f = window.GUI.slider_float('N ray steps', ppConfig.n_steps_f, 10.0, 200.0)
+        ppConfig.n_ray_steps = window.GUI.slider_float('N ray steps', ppConfig.n_ray_steps, 10.0, 200.0)
 
         window.GUI.text("Distance distribution:")
         if window.GUI.checkbox("Constant", ppConfig.distance_sampling_distribution == ppConfig.EnumDistanceSamplingDistribution.CONSTANT):
@@ -729,8 +742,6 @@ class PPSimulation_3DDiscrete(PPSimulation):
         
     def __init__(self, ppInternalData, ppConfig, batch_mode=False, num_iterations=-1):
         self.current_deposit_index = 0
-        self.data_edit_index = 0
-
         self.do_export = False
         self.do_screenshot = False
         self.do_quit = False
@@ -799,8 +810,14 @@ class PPSimulation_3DDiscrete(PPSimulation):
             
                 ## Main simulation sequence
                 if self.do_simulate:
-                    ppInternalData.ppKernels.data_step_2D_discrete(ppConfig.data_deposit, self.current_deposit_index, ppConfig.ppData.DOMAIN_MIN, ppConfig.ppData.DOMAIN_MAX, ppConfig.DEPOSIT_RESOLUTION, ppInternalData.data_field, ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.agent_step_2D_discrete(ppConfig.sense_distance,\
+                    ppInternalData.ppKernels.data_step_3D_discrete(ppConfig.data_deposit,\
+                        self.current_deposit_index,\
+                        ppConfig.ppData.DOMAIN_MIN,\
+                        ppConfig.ppData.DOMAIN_MAX,\
+                        ppConfig.DEPOSIT_RESOLUTION,\
+                        ppInternalData.data_field,\
+                        ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.agent_step_3D_discrete(ppConfig.sense_distance,\
                         ppConfig.sense_angle,\
                         ppConfig.steering_rate,\
                         ppConfig.sampling_exponent,\
@@ -817,23 +834,34 @@ class PPSimulation_3DDiscrete(PPSimulation):
                         ppConfig.ppData.DOMAIN_SIZE,\
                         ppConfig.ppData.DOMAIN_MIN,\
                         ppConfig.ppData.DOMAIN_MAX,\
-                        ppConfig.DEPOSIT_RESOLUTION,\
                         ppConfig.TRACE_RESOLUTION,\
+                        ppConfig.DEPOSIT_RESOLUTION,\
                         ppInternalData.agents_field,\
-                        ppInternalData.deposit_field,\
-                        ppInternalData.trace_field
-                        )
-                    ppInternalData.ppKernels.deposit_relaxation_step_2D_discrete(ppConfig.deposit_attenuation, self.current_deposit_index, ppConfig.DEPOSIT_RESOLUTION, ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.trace_relaxation_step_2D_discrete(ppConfig.trace_attenuation, ppInternalData.trace_field)
+                        ppInternalData.trace_field,\
+                        ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.deposit_relaxation_step_3D_discrete(ppConfig.deposit_attenuation,\
+                        self.current_deposit_index,\
+                        ppConfig.DEPOSIT_RESOLUTION,\
+                        ppInternalData.deposit_field)
+                    ppInternalData.ppKernels.trace_relaxation_step_3D_discrete(ppConfig.trace_attenuation, ppInternalData.trace_field)
                     self.current_deposit_index = 1 - self.current_deposit_index
             
                 ## Render visualization
-                ppInternalData.ppKernels.render_visualization_2D_discrete(ppConfig.deposit_vis,\
-                    ppConfig.trace_vis,\
+                ppInternalData.ppKernels.render_visualization_3D_raymarched(ppConfig.trace_vis,\
+                    ppConfig.deposit_vis,\
+                    camera_distance,\
+                    camera_polar,\
+                    camera_azimuth,\
+                    ppConfig.n_ray_steps,\
                     self.current_deposit_index,\
+                    ppConfig.TRACE_RESOLUTION,\
                     ppConfig.DEPOSIT_RESOLUTION,\
                     ppConfig.VIS_RESOLUTION,\
-                    ppConfig.TRACE_RESOLUTION,\
+                    ppConfig.DOMAIN_SIZE_MAX,\
+                    ppConfig.ppData.DOMAIN_MIN,\
+                    ppConfig.ppData.DOMAIN_MAX,\
+                    ppConfig.ppData.DOMAIN_CENTER,\
+                    ppConfig.RAY_EPSILON,\
                     ppInternalData.deposit_field,\
                     ppInternalData.trace_field,\
                     ppInternalData.vis_field)
@@ -855,11 +883,12 @@ class PPSimulation_3DDiscrete(PPSimulation):
 
 class PPPostSimulation:
     def __init__(self, ppInternalData):
-        ppInternalData.store_fit()
+        pass
 
 class PPPostSimulation_2DDiscrete(PPPostSimulation):
     def __init__(self, ppInternalData):
         super().__init__(ppInternalData)
+        ppInternalData.store_fit()
 
 class PPPostSimulation_3DDiscrete(PPPostSimulation):
     def __init__(self, ppInternalData):
