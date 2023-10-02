@@ -128,7 +128,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-experiments/jupyter/imgui.ini
+experiments/jupyter/production/imgui.ini
 src/imgui.ini
 
 # MacOS files
