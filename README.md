@@ -20,16 +20,42 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 - Main GitHub page: [PolyPhy Hub](https://github.com/PolyPhyHub)
 - Official website: [polyphy.io](https://polyphy.io)
 - Underlying research: [overview](https://elek.pub/projects/Rhizome-Cosmology/) and [publications](https://elek.pub/research.html)
+- Email list: [Google Groups](https://groups.google.com/g/polyphy-news)
 
 ## System Requirements
-- Decent GPU, currently tested NVIDIA GPUs, other brands subject to support by the [Taichi API](https://github.com/taichi-dev/taichi)
+- Decent GPU, recommended a mid-range discrete one
+  - currently running best on NVIDIA GPUs, other brands supported as well (subject to the current capabilities of the [Taichi API](https://github.com/taichi-dev/taichi))
   - CPU fallback available for debugging purposes
 - Recent Windows, Linux or Mac OS
 - Python 3.x, Anaconda recommended
 
 ## Repository
-The repository is located at the following GitHub URL:<br/>
+The main repository is located at the following GitHub URL:<br/>
 <https://github.com/PolyPhyHub/PolyPhy.git>
+
+The other repositories are linked from the following "org" page:<br/>
+<https://github.com/PolyPhyHub/>
+
+## Running PolyPhy
+Please note the project is currently undergoing a significant refactoring in order to streamline the use of the software in CLI, improve its modularity (making it easier to implement custom pipelines and extend the existing ones), and add new features (such as the recent addition of batch mode).
+
+To **install** PolyPhy, clone this repository, open a Python console, navigate to the root of the repo, and run
+```
+pip install -r requirements.txt
+```
+Afterwards, navigate to the **./experiments/jupyter/production/** and run
+```
+python polyphy_2DDiscrete.py -f "data/csv/sample_2D_linW.csv"
+```
+for the standard 2D pipeline, or
+```
+python polyphy_3DDiscrete.py -f "data/csv/sample_3D_linW.csv"
+```
+to invoke the standard 3D discrete pipeline on sample data. You can also specify a custom CSV file (see the sample data for the format details, typically the data are tuples with 2 or 3 spatial coorinates followed by weights for each data point). The functionality of these pipelines is described below.
+
+To display help on the available CLI parameters, simply run the respective command without any arguments.
+
+There is also a number of notebooks implementing various pipelines (some of which are documented below). These are updated to different degrees, and we are in the process of porting them to the refactored class structure. Updates coming soon.
 
 ## Functionality
 The use-cases currently supported by *PolyPhy* are divided according to the data workflow they are built around. Each use-case has a corresponding Jupyter notebook that implements it located in **./experiments/Jupyter**. This section reviews them case by case, and the following section provides an extensive tutorial recorded at the recent OSPO Symposium 2022.
@@ -59,68 +85,6 @@ Below is a recording of the [PolyPhy Workshop](https://elek.pub/workshop_cross20
 This 93-minute workshop covers *PolyPhy*'s research background, all of the 5 above usecases, and extended technical discussion.
 
 [![](http://i3.ytimg.com/vi/3-hm7iTqz0U/hqdefault.jpg)](https://www.youtube.com/watch?v=3-hm7iTqz0U "PolyPhy Workshop")
-
-## PolyPhy Build
-
-### Run using docker
-To build the docker image:<br/>
-```
-docker build . -t polyphy
-```
-To run the docker container:<br/>
-```
-docker run -it polyphy
-```
-Optional:<br/>
-If you want to work with jupyter notebook and develop:<br/>
-```
-docker run -it -p 8000:8000 -p 8888:8888 polyphy
-```
-
-### Install locally from code
-Navigate to the repository root and run:<br/>
-```
-pip install . -U
-```
-
-### Install from PyPI
-From the command line run:<br/>
-```
-pip install polyphy
-```
-
-### Running PolyPhy
-**Please note that the latest PolyPhy code is currently undergoing refactoring and the latest functionality presented in the Jupyter notebooks described above is not fully ported yet.**
-
-Running PolyPhy from the command line:<br/>
-``` pycon
-✗ polyphy
-[Taichi] version 1.0.3, llvm 10.0.0, commit fae94a21, osx, python 3.8.9
-usage: polyphy [-h] [-v] [-q] {run2d,run3d} ...
-
-positional arguments:
-  {run2d,run3d}  sub command help
-    run2d        run 2D PolyPhy
-    run3d        run 3D PolyPhy
-
-optional arguments:
-  -h, --help     show this help message and exit
-  -v, --version  show program's version number and exit
-  -q, --quiet    suppress output
-```
-
-Running polyphy2d/3d using the Python interface:<br/>
-``` pycon
-✗ python
-Python 3.8.9 (default, Apr 13 2022, 08:48:06)
-[Clang 13.1.6 (clang-1316.0.21.2.5)] on darwin
-Type "help", "copyright", "credits" or "license" for more information.
->>> import polyphy
-[Taichi] version 1.0.3, llvm 10.0.0, commit fae94a21, windows, python 3.8.9
->>> polyphy.lib.run_2D()
-[Taichi] Starting on arch=CUDA
-...
-```
 
 ## Services
 
