@@ -374,7 +374,7 @@ class PPSimulation_3DDiscrete(PPSimulation):
                 if self.do_quit:
                     break
 
-            if batch_mode is False:    
+            if not batch_mode:    
                 window.destroy()
 
 

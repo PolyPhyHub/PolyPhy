@@ -167,7 +167,7 @@ class PPInternalData:
     def __init_internal_data__(self, kernels):
         pass
 
-    def edit_data(self, edit_index: PPTypes.INT_CPU, 
+    def edit_data(self, edit_index: PPTypes.INT_CPU,
                   window: ti.ui.Window) -> PPTypes.INT_CPU:
         pass
 
