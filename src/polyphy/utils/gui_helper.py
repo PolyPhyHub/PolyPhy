@@ -5,7 +5,8 @@ import math
 
 
 class GuiHelper:
-    def __init__(self, window, ppConfig):
+    @staticmethod
+    def draw(self, window, ppConfig):
         # Draw main interactive control GUI
         window.GUI.begin(
             'Main', 0.01, 0.01, 0.32 * 1024.0 /

@@ -25,6 +25,7 @@ class PPKernels:
             t7 < 0.0 or t6 >= t7) else PPTypes.VEC2f(t6, t7)
 
     # GPU kernels (callable by core classes via Taichi API) ========================
+    @ti.kernel
     def zero_field(self, f: ti.template()):
         for cell in ti.grouped(f):
             f[cell].fill(0.0)

@@ -184,8 +184,7 @@ class PPInternalData:
 class PPSimulation:
     def __drawGUI__(self,
                     window,
-                    ppConfig,
-                    ppData):
+                    ppConfig):
         pass
 
     def __init__(self,

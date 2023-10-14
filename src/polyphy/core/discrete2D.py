@@ -189,7 +189,7 @@ class PPInternalData_2DDiscrete(PPInternalData):
 
 class PPSimulation_2DDiscrete(PPSimulation):
     def __drawGUI__(self, window, ppConfig):
-        GuiHelper(window, ppConfig)
+        GuiHelper.draw(self, window, ppConfig)
 
     def __init__(self,
                  ppInternalData,
@@ -247,8 +247,7 @@ class PPSimulation_2DDiscrete(PPSimulation):
                         self.data_edit_index = ppInternalData.edit_data(
                             self.data_edit_index, window)
                     if not self.hide_UI:
-                        self.__drawGUI__(window, ppConfig,
-                                         ppConfig.ppData)
+                        self.__drawGUI__(window, ppConfig)
 
                 # Main simulation sequence
                 if self.do_simulate:

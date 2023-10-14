@@ -205,7 +205,7 @@ class PPInternalData_3DDiscrete(PPInternalData):
 
 class PPSimulation_3DDiscrete(PPSimulation):
     def __drawGUI__(self, window, ppConfig):
-        GuiHelper(window, ppConfig)
+        GuiHelper.draw(self, window, ppConfig)
 
     def __init__(self, ppInternalData, ppConfig, batch_mode=False, num_iterations=-1):
         self.current_deposit_index = 0
@@ -291,7 +291,7 @@ class PPSimulation_3DDiscrete(PPSimulation):
                         last_MMB = [-1.0, -1.0]
 
                     if not self.hide_UI:
-                        self.__drawGUI__(window, ppConfig, ppConfig.ppData)
+                        self.__drawGUI__(window, ppConfig)
 
                 # Main simulation sequence
                 if self.do_simulate:

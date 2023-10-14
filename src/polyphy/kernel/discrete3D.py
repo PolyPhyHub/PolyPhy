@@ -225,59 +225,50 @@ class PPKernels_3DDiscrete(PPKernels):
             # Taichi doesn't support modulo for tuples
             # so each dimension is handled separately
             value = DIFFUSION_WEIGHTS[0] * \
-                deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
-                               DEPOSIT_RESOLUTION[0], (
-                                cell[1] + 0 +
-                                DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][
-                                    current_deposit_index]
+                deposit_field[((
+                    cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
+                    DEPOSIT_RESOLUTION[0], (
+                        cell[1] + 0 +
+                        DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
+                            cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
+                            )][current_deposit_index]
             + DIFFUSION_WEIGHTS[1] * \
-                deposit_field[((cell[0] - 1 + DEPOSIT_RESOLUTION[0]) %
-                               DEPOSIT_RESOLUTION[0], (
-                                   cell[1] + 0 +
-                                   DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][
-                                       current_deposit_index]
-            + DIFFUSION_WEIGHTS[1] * \
-                deposit_field[((cell[0] + 1 + DEPOSIT_RESOLUTION[0]) %
-                               DEPOSIT_RESOLUTION[0], (
-                                   cell[1] + 0 +
-                                   DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][
-                                       current_deposit_index]
-            + DIFFUSION_WEIGHTS[1] * \
-                deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
-                               DEPOSIT_RESOLUTION[0], (
-                                   cell[1] - 1 +
-                                   DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][
-                                       current_deposit_index]
-            + DIFFUSION_WEIGHTS[1] * \
-                deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
-                               DEPOSIT_RESOLUTION[0], (
-                                   cell[1] + 1 +
-                                   DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][
-                                       current_deposit_index]
-            + DIFFUSION_WEIGHTS[2] * \
-                deposit_field[((cell[0] - 1 + DEPOSIT_RESOLUTION[0]) %
-                               DEPOSIT_RESOLUTION[0], (
-                                   cell[1] - 1 +
-                                   DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][
-                                       current_deposit_index]
-            + DIFFUSION_WEIGHTS[2] * \
-                deposit_field[((cell[0] + 1 + DEPOSIT_RESOLUTION[0]) %
-                               DEPOSIT_RESOLUTION[0], (
-                                   cell[1] + 1 +
-                                   DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][
-                                       current_deposit_index]
-            + DIFFUSION_WEIGHTS[2] * \
-                deposit_field[((cell[0] + 1 + DEPOSIT_RESOLUTION[0]) %
-                               DEPOSIT_RESOLUTION[0], (
-                                   cell[1] - 1 +
-                                   DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][
-                                       current_deposit_index]
-            + DIFFUSION_WEIGHTS[2] * \
-                deposit_field[((cell[0] - 1 + DEPOSIT_RESOLUTION[0]) %
-                               DEPOSIT_RESOLUTION[0], (
-                                   cell[1] + 1 +
-                                   DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][
-                                       current_deposit_index]
+                deposit_field[((
+                    cell[0] + 1 + DEPOSIT_RESOLUTION[0]) %
+                    DEPOSIT_RESOLUTION[0], (
+                        cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
+                            cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
+                            )][current_deposit_index]
+            + DIFFUSION_WEIGHTS[1] * deposit_field[((
+                cell[0] - 1 + DEPOSIT_RESOLUTION[0]) %
+                DEPOSIT_RESOLUTION[0], (
+                    cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
+                        cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
+                        )][current_deposit_index]
+            + DIFFUSION_WEIGHTS[1] * deposit_field[((
+                cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
+                DEPOSIT_RESOLUTION[0], (
+                    cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
+                        cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
+                        )][current_deposit_index]
+            + DIFFUSION_WEIGHTS[1] * deposit_field[((
+                cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
+                DEPOSIT_RESOLUTION[0], (
+                    cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
+                        cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
+                        )][current_deposit_index]
+            + DIFFUSION_WEIGHTS[1] * deposit_field[((
+                cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
+                DEPOSIT_RESOLUTION[0], (
+                    cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
+                        cell[2] + 1 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
+                        )][current_deposit_index]
+            + DIFFUSION_WEIGHTS[1] * deposit_field[((
+                cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
+                DEPOSIT_RESOLUTION[0], (
+                    cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
+                        cell[2] - 1 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
+                        )][current_deposit_index]
             deposit_field[cell][1 - current_deposit_index] = (
                 attenuation * value / DIFFUSION_WEIGHTS_NORM)
         return
