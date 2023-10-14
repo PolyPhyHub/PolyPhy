@@ -16,8 +16,7 @@ class PolyPhy_3DDiscrete(PolyPhy):
         self.rng = default_rng()
         self.ppInputData = PPInputData_3DDiscrete(self.ppConfig.input_file, self.rng)
         self.ppConfig.register_data(self.ppInputData)
-        ti.init(arch=ti.cpu if os.path.exists("/tmp/flag") else ti.gpu,
-                device_memory_GB=4)
+        ti.init(ti.cpu)
         self.kernels = PPKernels_3DDiscrete()
         self.ppInternalData = PPInternalData_3DDiscrete(
             self.rng,
