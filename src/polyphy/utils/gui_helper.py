@@ -1,7 +1,7 @@
-
-from core.common import PPTypes
 import numpy as np
 import math
+
+from core.common import PPTypes
 
 
 class GuiHelper:

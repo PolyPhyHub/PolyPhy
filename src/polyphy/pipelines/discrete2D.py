@@ -1,7 +1,6 @@
-from numpy.random import default_rng
-import taichi as ti
 import os
-
+import taichi as ti
+from numpy.random import default_rng
 from core.discrete2D import PPInputData_2DDiscrete, PPInternalData_2DDiscrete
 from core.discrete2D import PPSimulation_2DDiscrete, PPPostSimulation_2DDiscrete
 from kernel.discrete2D import PPKernels_2DDiscrete
@@ -9,8 +8,7 @@ from .common import PolyPhy
 
 
 class PolyPhy_2DDiscrete(PolyPhy):
-    def __init__(self,
-                 ppConfig):
+    def __init__(self, ppConfig):
         self.batch_mode = False
         self.num_iterations = -1
         self.ppConfig = ppConfig
