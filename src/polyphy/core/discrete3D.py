@@ -20,19 +20,16 @@ class PPConfig_3DDiscrete(PPConfig):
         self.DOMAIN_SIZE_MAX = np.max(
             [ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1], ppData.DOMAIN_SIZE[2]])
         self.TRACE_RESOLUTION = PPTypes.INT_CPU((
-                PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] /
-                self.DOMAIN_SIZE_MAX,
-                PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] /
-                self.DOMAIN_SIZE_MAX,
-                PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[2] /
-                self.DOMAIN_SIZE_MAX))
+            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] /
+            self.DOMAIN_SIZE_MAX,
+            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] /
+            self.DOMAIN_SIZE_MAX,
+            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[2] /
+            self.DOMAIN_SIZE_MAX))
         self.DEPOSIT_RESOLUTION = (
-            self.TRACE_RESOLUTION[0] //
-            PPConfig.DEPOSIT_DOWNSCALING_FACTOR,
-            self.TRACE_RESOLUTION[1] //
-            PPConfig.DEPOSIT_DOWNSCALING_FACTOR,
-            self.TRACE_RESOLUTION[2] //
-            PPConfig.DEPOSIT_DOWNSCALING_FACTOR)
+            self.TRACE_RESOLUTION[0] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR,
+            self.TRACE_RESOLUTION[1] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR,
+            self.TRACE_RESOLUTION[2] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR)
 
         # Check if these are set and if not give them decent initial estimates
         if self.sense_distance < 1.e-4:
