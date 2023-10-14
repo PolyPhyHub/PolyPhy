@@ -174,15 +174,25 @@ class PPInternalData:
     def store_fit(self):
         pass
 
-    def __init__(self, rng, kernels, ppConfig):
+    def __init__(self,
+                 rng,
+                 kernels,
+                 ppConfig):
         pass
 
 
 class PPSimulation:
-    def __drawGUI__(self, window, ppConfig, ppData):
+    def __drawGUI__(self,
+                    window,
+                    ppConfig,
+                    ppData):
         pass
 
-    def __init__(self, ppInternalData, ppConfig, batch_mode, num_iterations):
+    def __init__(self,
+                 ppInternalData,
+                 ppConfig,
+                 batch_mode,
+                 num_iterations):
         pass
 
 
