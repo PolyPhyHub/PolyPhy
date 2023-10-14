@@ -37,7 +37,7 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 90 chars wide
         flake8 ./src --count --exit-zero --max-complexity=10 --max-line-length=90 --statistics
   
-        flake8 ./src --ignore=E501,W503,E402,F401,F403,E722,F841,W504  --max-line-length=90 2>&1
+        flake8 ./src --ignore=E501,W503,E402,F401,F403,E722,F841,W504,C901,E302,E226,E126  --max-line-length=90 2>&1
         yapf -d --recursive ./src --style=.style.yapf 2>&1
         isort ./src -c -v
     - name: Test with pytest

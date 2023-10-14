@@ -373,7 +373,7 @@ class PPSimulation_3DDiscrete(PPSimulation):
 
             if not batch_mode:
                 window.destroy()
-# noqa: C901
+
 
 class PPPostSimulation_3DDiscrete(PPPostSimulation):
     def __init__(self, ppInternalData):
