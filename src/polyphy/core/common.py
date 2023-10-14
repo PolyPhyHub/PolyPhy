@@ -5,10 +5,11 @@ import taichi as ti
 
 from utils.logger import Logger
 
+
 class PPTypes:
-    ## TODO: impletement and test float 16 and 64
-    ## (int data don't occupy significant memory
-    ## so no need to optimize unless explicitly needed)
+    # TODO: impletement and test float 16 and 64
+    # (int data don't occupy significant memory
+    # so no need to optimize unless explicitly needed)
     FLOAT_CPU = np.float32
     FLOAT_GPU = ti.f32
     INT_CPU = np.int32
@@ -33,45 +34,47 @@ class PPTypes:
             PPTypes.FLOAT_CPU = np.float16
             PPTypes.FLOAT_GPU = ti.f16
         else:
-            raise ValueError("Invalid float precision value. Supported values: float64, float32, float16")
-        
+            raise ValueError("Invalid float precision value. Supported values: \
+                                float64, float32, float16")
+
+
 class PPConfig:
-    ## TODO load trace resolution as argument
-    ## Distance sampling distribution for agents
+    # TODO load trace resolution as argument
+    # Distance sampling distribution for agents
     class EnumDistanceSamplingDistribution(IntEnum):
         CONSTANT = 0
         EXPONENTIAL = 1
         MAXWELL_BOLTZMANN = 2
 
-    ## Directional sampling distribution for agents
+    # Directional sampling distribution for agents
     class EnumDirectionalSamplingDistribution(IntEnum):
         DISCRETE = 0
         CONE = 1
 
-    ## Sampling strategy for directional agent mutation
+    # Sampling strategy for directional agent mutation
     class EnumDirectionalMutationType(IntEnum):
         DETERMINISTIC = 0
         PROBABILISTIC = 1
 
-    ## Deposit fetching strategy
+    # Deposit fetching strategy
     class EnumDepositFetchingStrategy(IntEnum):
         NN = 0
         NN_PERTURBED = 1
 
-    ## Handling strategy for agents that leave domain boundary
+    # Handling strategy for agents that leave domain boundary
     class EnumAgentBoundaryHandling(IntEnum):
         WRAP = 0
         REINIT_CENTER = 1
         REINIT_RANDOMLY = 2
-    
-    ## State flags
+
+    # State flags
     distance_sampling_distribution = EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
     directional_sampling_distribution = EnumDirectionalSamplingDistribution.CONE
     directional_mutation_type = EnumDirectionalMutationType.PROBABILISTIC
     deposit_fetching_strategy = EnumDepositFetchingStrategy.NN_PERTURBED
     agent_boundary_handling = EnumAgentBoundaryHandling.WRAP
 
-    ## Simulation-wide constants and defaults
+    # Simulation-wide constants and defaults
     N_DATA_DEFAULT = 1000
     N_AGENTS_DEFAULT = 1000000
     DOMAIN_SIZE_DEFAULT = 100.0
@@ -82,10 +85,10 @@ class PPConfig:
     RAY_EPSILON = 1.0e-3
     VIS_RESOLUTION = (1440, 900)
 
-    ## Input files
+    # Input files
     input_file = ''
 
-    ## Simulation parameters
+    # Simulation parameters
     sense_distance = 0.0
     sense_angle = 1.5
     steering_rate = 0.5
@@ -101,7 +104,7 @@ class PPConfig:
 
     @staticmethod
     def set_value(constant_name, new_value):
-        CONSTANT_VARS = ["N_DATA_DEFAULT","N_AGENTS_DEFAULT","DOMAIN_SIZE_DEFAULT"]
+        CONSTANT_VARS = ["N_DATA_DEFAULT", "N_AGENTS_DEFAULT", "DOMAIN_SIZE_DEFAULT"]
         if constant_name in CONSTANT_VARS:
             raise AssertionError("Changing const variables do not work!")
         if hasattr(PPConfig, constant_name):
@@ -115,14 +118,15 @@ class PPConfig:
         else:
             raise AttributeError(f"'PPConfig' has no attribute '{constant_name}'")
 
-    def register_data(self,ppData):
+    def register_data(self, ppData):
         pass
 
     def __init__(self):
         pass
 
+
 class PPInputData:
-    ## TODO: determine ROOT automatically
+    # TODO: determine ROOT automatically
     ROOT = '../../'
     input_file = ''
 
@@ -130,20 +134,20 @@ class PPInputData:
         # Load from a file - parse file extension
         pass
 
-    def __generate_test_data__(self,rng):
+    def __generate_test_data__(self, rng):
         # Load random data to test / simulation
         pass
 
     def __print_simulation_data_stats__(self):
-        Logger.logToStdOut("info",'Simulation domain min:', self.DOMAIN_MIN)
-        Logger.logToStdOut("info",'Simulation domain max:', self.DOMAIN_MAX)
-        Logger.logToStdOut("info",'Simulation domain size:', self.DOMAIN_SIZE)
-        Logger.logToStdOut("info",'Data sample:', self.data[0, :])
-        Logger.logToStdOut("info",'Number of agents:', self.N_AGENTS)
-        Logger.logToStdOut("info",'Number of data points:', self.N_DATA)
+        Logger.logToStdOut("info", 'Simulation domain min:', self.DOMAIN_MIN)
+        Logger.logToStdOut("info", 'Simulation domain max:', self.DOMAIN_MAX)
+        Logger.logToStdOut("info", 'Simulation domain size:', self.DOMAIN_SIZE)
+        Logger.logToStdOut("info", 'Data sample:', self.data[0, :])
+        Logger.logToStdOut("info", 'Number of agents:', self.N_AGENTS)
+        Logger.logToStdOut("info", 'Number of data points:', self.N_DATA)
 
     def __init__(self, input_file, rng=default_rng()):
-        ## Initialize data and agents
+        # Initialize data and agents
         self.data = None
         self.DOMAIN_MIN = None
         self.DOMAIN_MAX = None
@@ -158,23 +162,30 @@ class PPInputData:
             self.__generate_test_data__(rng)
         self.__print_simulation_data_stats__()
 
+
 class PPInternalData:
-    def __init_internal_data__(self,kernels):
+    def __init_internal_data__(self, kernels):
         pass
-    def edit_data(self, edit_index: PPTypes.INT_CPU, window: ti.ui.Window) -> PPTypes.INT_CPU:
+
+    def edit_data(self, edit_index: PPTypes.INT_CPU, 
+                  window: ti.ui.Window) -> PPTypes.INT_CPU:
         pass
+
     def store_fit(self):
         pass
-    def __init__(self,rng,kernels,ppConfig):
+
+    def __init__(self, rng, kernels, ppConfig):
         pass
+
 
 class PPSimulation:
     def __drawGUI__(self, window, ppConfig, ppData):
         pass
+
     def __init__(self, ppInternalData, ppConfig, batch_mode, num_iterations):
         pass
+
 
 class PPPostSimulation:
     def __init__(self, ppInternalData):
         pass
-

@@ -2,11 +2,12 @@ from datetime import datetime
 import logging
 import time
 
+
 class Logger:
     @staticmethod
     def stamp() -> str:
         return datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d_%H-%M-%S")
-    
+
     log_level = {
         'debug': logging.DEBUG,
         'info': logging.INFO,
