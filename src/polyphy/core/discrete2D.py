@@ -322,6 +322,7 @@ class PPSimulation_2DDiscrete(PPSimulation):
 
             if batch_mode is False:
                 window.destroy()
+# noqa: C901
 
 
 class PPPostSimulation_2DDiscrete(PPPostSimulation):
