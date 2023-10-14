@@ -17,7 +17,8 @@ class PolyPhy_2DDiscrete(PolyPhy):
         self.rng = default_rng()
         self.ppInputData = PPInputData_2DDiscrete(self.ppConfig.input_file, self.rng)
         self.ppConfig.register_data(self.ppInputData)
-        ti.init(arch=ti.cpu if os.path.exists("/tmp/flag") else ti.gpu)
+        #ti.init(arch=ti.cpu if os.path.exists("/tmp/flag") else ti.gpu)
+        ti.init(arch=ti.cpu)
         self.kernels = PPKernels_2DDiscrete()
         self.ppInternalData = PPInternalData_2DDiscrete(
             self.rng,

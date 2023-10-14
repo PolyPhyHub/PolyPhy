@@ -21,12 +21,10 @@ class PPConfig_2DDiscrete(PPConfig):
         )
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]])
         self.TRACE_RESOLUTION = PPTypes.INT_CPU(
-            (
-                PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] /
-                self.DOMAIN_SIZE_MAX,
-                PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] /
-                self.DOMAIN_SIZE_MAX
-            )
+            (PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] /
+                self.DOMAIN_SIZE_MAX, PPTypes.FLOAT_CPU(
+                self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] /
+                self.DOMAIN_SIZE_MAX)
         )
         self.DEPOSIT_RESOLUTION = (
             self.TRACE_RESOLUTION[0] //
@@ -80,14 +78,12 @@ class PPInputData_2DDiscrete(PPInputData):
         self.DOMAIN_MIN = (0.0, 0.0)
         self.DOMAIN_MAX = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
         self.data = np.zeros(shape=(self.N_DATA, 3), dtype=PPTypes.FLOAT_CPU)
-        self.data[:, 0] = rng.normal(
-            loc=self.DOMAIN_MIN[0] + 0.5 *
-            self.DOMAIN_MAX[0], scale=0.13 *
-            self.DOMAIN_SIZE[0], size=self.N_DATA)
-        self.data[:, 1] = rng.normal(
-            loc=self.DOMAIN_MIN[1] + 0.5 *
-            self.DOMAIN_MAX[1], scale=0.13 *
-            self.DOMAIN_SIZE[1], size=self.N_DATA)
+        self.data[:, 0] = rng.normal(loc=self.DOMAIN_MIN[0] + 0.5 *
+                                     self.DOMAIN_MAX[0], scale=0.13 *
+                                     self.DOMAIN_SIZE[0], size=self.N_DATA)
+        self.data[:, 1] = rng.normal(loc=self.DOMAIN_MIN[1] + 0.5 *
+                                     self.DOMAIN_MAX[1], scale=0.13 *
+                                     self.DOMAIN_SIZE[1], size=self.N_DATA)
         self.data[:, 2] = np.mean(self.data[:, 2])
 
 
@@ -104,12 +100,10 @@ class PPInternalData_2DDiscrete(PPInternalData):
     # This can be very costly for many data points! (eg 10^5 or more)
     def edit_data(self, edit_index: PPTypes.INT_CPU,
                   window: ti.ui.Window) -> PPTypes.INT_CPU:
-        mouse_rel_pos = (
-            np.min([np.max([0.001, window.get_cursor_pos()[0]]), 0.999]),
-            np.min([np.max([0.001, window.get_cursor_pos()[1]]), 0.999]))
-        mouse_pos = np.add(
-            self.ppConfig.ppData.DOMAIN_MIN,
-            np.multiply(mouse_rel_pos, self.ppConfig.ppData.DOMAIN_SIZE))
+        mouse_rel_pos = (np.min([np.max([0.001, window.get_cursor_pos()[0]]), 0.999]),
+                         np.min([np.max([0.001, window.get_cursor_pos()[1]]), 0.999]))
+        mouse_pos = np.add(self.ppConfig.ppData.DOMAIN_MIN,
+                           np.multiply(mouse_rel_pos, self.ppConfig.ppData.DOMAIN_SIZE))
         self.ppConfig.ppData.data[edit_index, :] = (
             mouse_pos[0], mouse_pos[1], self.ppConfig.ppData.AVG_WEIGHT
         )
@@ -134,53 +128,37 @@ class PPInternalData_2DDiscrete(PPInternalData):
     def __init__(self, rng, ppKernels, ppConfig):
         self.agents = np.zeros(
             shape=(ppConfig.ppData.N_AGENTS, 4), dtype=PPTypes.FLOAT_CPU)
-        self.agents[:, 0] = rng.uniform(
-            low=ppConfig.ppData.DOMAIN_MIN[0] + 0.001,
-            high=ppConfig.ppData.DOMAIN_MAX[0] - 0.001,
-            size=ppConfig.ppData.N_AGENTS)
-        self.agents[:, 1] = rng.uniform(
-            low=ppConfig.ppData.DOMAIN_MIN[1] + 0.001,
-            high=ppConfig.ppData.DOMAIN_MAX[1] - 0.001,
-            size=ppConfig.ppData.N_AGENTS)
-        self.agents[:, 2] = rng.uniform(
-            low=0.0,
-            high=2.0 * np.pi,
-            size=ppConfig.ppData.N_AGENTS)
+        self.agents[:, 0] = rng.uniform(low=ppConfig.ppData.DOMAIN_MIN[0] + 0.001,
+                                        high=ppConfig.ppData.DOMAIN_MAX[0] - 0.001,
+                                        size=ppConfig.ppData.N_AGENTS)
+        self.agents[:, 1] = rng.uniform(low=ppConfig.ppData.DOMAIN_MIN[1] + 0.001,
+                                        high=ppConfig.ppData.DOMAIN_MAX[1] - 0.001,
+                                        size=ppConfig.ppData.N_AGENTS)
+        self.agents[:, 2] = rng.uniform(low=0.0, high=2.0 * np.pi,
+                                        size=ppConfig.ppData.N_AGENTS)
         self.agents[:, 3] = 1.0
         Logger.logToStdOut("info", 'Agent sample:', self.agents[0, :])
 
-        self.data_field = ti.Vector.field(
-            n=3,
-            dtype=PPTypes.FLOAT_GPU,
-            shape=ppConfig.ppData.N_DATA)
-        self.agents_field = ti.Vector.field(
-            n=4,
-            dtype=PPTypes.FLOAT_GPU,
-            shape=ppConfig.ppData.N_AGENTS)
-        self.deposit_field = ti.Vector.field(
-            n=2,
-            dtype=PPTypes.FLOAT_GPU,
-            shape=ppConfig.DEPOSIT_RESOLUTION)
-        self.trace_field = ti.Vector.field(
-            n=1,
-            dtype=PPTypes.FLOAT_GPU,
-            shape=ppConfig.TRACE_RESOLUTION)
-        self.vis_field = ti.Vector.field(
-            n=3,
-            dtype=PPTypes.FLOAT_GPU,
-            shape=ppConfig.VIS_RESOLUTION)
-        Logger.logToStdOut(
-            "info",
-            'Total GPU memory allocated:',
-            PPTypes.INT_CPU(4 * (self.data_field.shape[0] * 3 +
-                                 self.agents_field.shape[0] * 4 +
-                                 self.deposit_field.shape[0] *
-                                 self.deposit_field.shape[1] * 2 +
-                                 self.trace_field.shape[0] *
-                                 self.trace_field.shape[1] * 1 +
-                                 self.vis_field.shape[0] *
-                                 self.vis_field.shape[1] * 3
-                                 ) / 2 ** 20), 'MB')
+        self.data_field = ti.Vector.field(n=3, dtype=PPTypes.FLOAT_GPU,
+                                          shape=ppConfig.ppData.N_DATA)
+        self.agents_field = ti.Vector.field(n=4, dtype=PPTypes.FLOAT_GPU,
+                                            shape=ppConfig.ppData.N_AGENTS)
+        self.deposit_field = ti.Vector.field(n=2, dtype=PPTypes.FLOAT_GPU,
+                                             shape=ppConfig.DEPOSIT_RESOLUTION)
+        self.trace_field = ti.Vector.field(n=1, dtype=PPTypes.FLOAT_GPU,
+                                           shape=ppConfig.TRACE_RESOLUTION)
+        self.vis_field = ti.Vector.field(n=3, dtype=PPTypes.FLOAT_GPU,
+                                         shape=ppConfig.VIS_RESOLUTION)
+        Logger.logToStdOut("info", 'Total GPU memory allocated:',
+                           PPTypes.INT_CPU(4 * (self.data_field.shape[0] * 3 +
+                                                self.agents_field.shape[0] * 4 +
+                                                self.deposit_field.shape[0] *
+                                                self.deposit_field.shape[1] * 2 +
+                                                self.trace_field.shape[0] *
+                                                self.trace_field.shape[1] * 1 +
+                                                self.vis_field.shape[0] *
+                                                self.vis_field.shape[1] * 3
+                                                ) / 2 ** 20), 'MB')
 
         self.ppConfig = ppConfig
         self.ppKernels = ppKernels
@@ -191,11 +169,7 @@ class PPSimulation_2DDiscrete(PPSimulation):
     def __drawGUI__(self, window, ppConfig):
         GuiHelper.draw(self, window, ppConfig)
 
-    def __init__(self,
-                 ppInternalData,
-                 ppConfig,
-                 batch_mode=False,
-                 num_iterations=-1):
+    def __init__(self, ppInternalData, ppConfig, batch_mode=False, num_iterations=-1):
         self.current_deposit_index = 0
         self.data_edit_index = 0
 
@@ -208,10 +182,9 @@ class PPSimulation_2DDiscrete(PPSimulation):
         # Check if file exists
         if not os.path.exists("/tmp/flag"):
             if batch_mode is False:
-                window = ti.ui.Window(
-                    'PolyPhy',
-                    (ppInternalData.vis_field.shape[0],
-                     ppInternalData.vis_field.shape[1]), show_window=True)
+                window = ti.ui.Window('PolyPhy', (ppInternalData.vis_field.shape[0],
+                                                  ppInternalData.vis_field.shape[1]
+                                                  ), show_window=True)
                 window.show()
                 canvas = window.get_canvas()
 
@@ -224,10 +197,8 @@ class PPSimulation_2DDiscrete(PPSimulation):
                     if curr_iteration > num_iterations:
                         break
                     if (num_iterations % curr_iteration) == 0:
-                        Logger.logToStdOut(
-                            "info",
-                            'Running MCPM... iteration',
-                            curr_iteration, '/', num_iterations)
+                        Logger.logToStdOut("info", 'Running MCPM... iteration',
+                                           curr_iteration, '/', num_iterations)
                 else:
                     # batch_mode is False
                     # Handle controls
