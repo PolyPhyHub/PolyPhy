@@ -41,8 +41,6 @@ dependencies = [
 [project.urls] 
 "Homepage" = "https://github.com/PolyPhyHub/PolyPhy"
 "Bug Reports" = "https://github.com/PolyPhyHub/PolyPhy/issues"
-"Funding" = ""
-"Source" = ""
 
 [build-system]
 # AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
