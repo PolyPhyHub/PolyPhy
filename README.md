@@ -13,7 +13,7 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 <!-- [![image](https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG)](https://codecov.io/gh/PolyPhyHub/PolyPhy) -->
 
 # PolyPhy
-*PolyPhy* is an unconventional toolkit for reconstructing continuous networks out of sparse 2D or 3D data. Such data can be defined as collections of discrete points, or a continuous sparse scalar field. *PolyPhy* produces a scalar density field that defines the recovered network structure. With the help of GPU-accelerated simulation and visualization, *PolyPhy* provides domain experts an interactive way to reconstruct discrete geometric data with an underlying network structure. The reconstruction is driven by the *Monte Carlo Physarum Machine* algorithm, a metaheuristic inspired by the morphology and dynamics of Physarum polycephalum aka 'slime mold'.
+*PolyPhy* is an unconventional toolkit for reconstructing continuous networks out of sparse 2D or 3D data. Such data can be defined as collections of discrete points, or a continuous sparse scalar field. *PolyPhy* produces a scalar density field that defines the recovered network structure. With the help of GPU-accelerated simulation and visualization, *PolyPhy* provides domain experts an interactive way to reconstruct discrete geometric data with an underlying network structure. The reconstruction is driven by the *Monte Carlo Physarum Machine* algorithm, a metaheuristic inspired by the morphology and dynamics of Physarum polycephalum aka 'slime mold'. 
 
 ## Related Resources
 - *PolyPhy* is a successor of [Polyphorm](https://github.com/CreativeCodingLab/Polyphorm)
