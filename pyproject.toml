@@ -1,5 +1,5 @@
 [project]
-name = "polyphy-testing"
+name = "polyphy-rule"
 version = "0.0.2"
 description = "description for polyphy testing"
 readme = "README.md"
