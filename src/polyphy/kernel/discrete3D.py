@@ -219,63 +219,21 @@ class PPKernels_3DDiscrete(PPKernels):
         DEPOSIT_RESOLUTION: PPTypes.VEC3i,
             deposit_field: ti.template()):
         DIFFUSION_WEIGHTS = [1.0, 1.0, 0.0, 0.0]
-        DIFFUSION_WEIGHTS_NORM = (DIFFUSION_WEIGHTS[0] + 6.0 *
-                                  DIFFUSION_WEIGHTS[1] + 12.0 *
-                                  DIFFUSION_WEIGHTS[2] + 8.0 *
-                                  DIFFUSION_WEIGHTS[3])
+        DIFFUSION_WEIGHTS_NORM = (DIFFUSION_WEIGHTS[0] + 6.0 * DIFFUSION_WEIGHTS[1] + 12.0 * DIFFUSION_WEIGHTS[2] + 8.0 * DIFFUSION_WEIGHTS[3])
         for cell in ti.grouped(deposit_field):
             # The "beautiful" expression below implements
             # a 3x3x3 kernel diffusion in a 6-neighborhood
             # with manually wrapped addressing
             # Taichi doesn't support modulo for tuples
             # so each dimension is handled separately
-            value = DIFFUSION_WEIGHTS[0] * \
-                deposit_field[((
-                    cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
-                    DEPOSIT_RESOLUTION[0], (
-                        cell[1] + 0 +
-                        DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
-                            cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
-                            )][current_deposit_index]
-            + DIFFUSION_WEIGHTS[1] * \
-                deposit_field[((
-                    cell[0] + 1 + DEPOSIT_RESOLUTION[0]) %
-                    DEPOSIT_RESOLUTION[0], (
-                        cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
-                            cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
-                            )][current_deposit_index]
-            + DIFFUSION_WEIGHTS[1] * deposit_field[((
-                cell[0] - 1 + DEPOSIT_RESOLUTION[0]) %
-                DEPOSIT_RESOLUTION[0], (
-                    cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
-                        cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
-                        )][current_deposit_index]
-            + DIFFUSION_WEIGHTS[1] * deposit_field[((
-                cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
-                DEPOSIT_RESOLUTION[0], (
-                    cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
-                        cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
-                        )][current_deposit_index]
-            + DIFFUSION_WEIGHTS[1] * deposit_field[((
-                cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
-                DEPOSIT_RESOLUTION[0], (
-                    cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
-                        cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
-                        )][current_deposit_index]
-            + DIFFUSION_WEIGHTS[1] * deposit_field[((
-                cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
-                DEPOSIT_RESOLUTION[0], (
-                    cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
-                        cell[2] + 1 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
-                        )][current_deposit_index]
-            + DIFFUSION_WEIGHTS[1] * deposit_field[((
-                cell[0] + 0 + DEPOSIT_RESOLUTION[0]) %
-                DEPOSIT_RESOLUTION[0], (
-                    cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (
-                        cell[2] - 1 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2]
-                        )][current_deposit_index]
-            deposit_field[cell][1 - current_deposit_index] = (
-                attenuation * value / DIFFUSION_WEIGHTS_NORM)
+            value = DIFFUSION_WEIGHTS[0] * deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2])][current_deposit_index]\
+                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2])][current_deposit_index]\
+                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2])][current_deposit_index]\
+                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2])][current_deposit_index]\
+                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (cell[2] + 0 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2])][current_deposit_index]\
+                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (cell[2] + 1 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2])][current_deposit_index]\
+                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1], (cell[2] - 1 + DEPOSIT_RESOLUTION[2]) % DEPOSIT_RESOLUTION[2])][current_deposit_index]
+            deposit_field[cell][1 - current_deposit_index] = (attenuation * value / DIFFUSION_WEIGHTS_NORM)
         return
 
     @ti.kernel
