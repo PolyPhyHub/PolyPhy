@@ -37,52 +37,52 @@ The other repositories are linked from the following "org" page:<br/>
 <https://github.com/PolyPhyHub/>
 
 ## Running PolyPhy
-Please note the project is currently undergoing a significant refactoring in order to streamline the use of the software in CLI, improve its modularity (making it easier to implement custom pipelines and extend the existing ones), and add new features (such as the recent addition of batch mode).
+Please note the project is currently undergoing refactoring in order to streamline the use of the software in CLI, improve its modularity (making it easier to implement custom pipelines and extend the existing ones), and add new features (such as the recent addition of batch mode).
 
 To **install** PolyPhy, clone this repository, open a Python console, navigate to the root of the repo, and run
 ```
 pip install -r requirements.txt
 ```
-Afterwards, navigate to the **./experiments/jupyter/production/** and run
+Afterwards, navigate to **./src/polyphy** and run
 ```
-python polyphy_2DDiscrete.py -f "data/csv/sample_2D_linW.csv"
+python polyphy.py 2d_discrete -f "data/csv/sample_2D_linW.csv"
 ```
-for the standard 2D pipeline, or
+for the standard 2D pipeline using the provided sample 2D dataset, or
 ```
-python polyphy_3DDiscrete.py -f "data/csv/sample_3D_linW.csv"
+python polyphy.py 3d_discrete -f "data/csv/sample_3D_linW.csv"
 ```
 to invoke the standard 3D discrete pipeline on sample data. You can also specify a custom CSV file (see the sample data for the format details, typically the data are tuples with 2 or 3 spatial coorinates followed by weights for each data point). The functionality of these pipelines is described below.
 
 To display help on the available CLI parameters, simply run the respective command without any arguments.
 
-There is also a number of notebooks implementing various pipelines (some of which are documented below). These are updated to different degrees, and we are in the process of porting them to the refactored class structure. Updates coming soon.
+There is also a number of Jupyter notebooks implementing various experiemtal pipelines (some of which are documented below). These are updated to different degrees, and we are in the process of porting them to the refactored class structure. Updates coming soon.
 
 ## Functionality
-The use-cases currently supported by *PolyPhy* are divided according to the data workflow they are built around. Each use-case has a corresponding Jupyter notebook that implements it located in **./experiments/Jupyter**. This section reviews them case by case, and the following section provides an extensive tutorial recorded at the recent OSPO Symposium 2022.
+The use-cases currently supported by *PolyPhy* are divided according to the data workflow they are built around. Each use case has a corresponding (extensible) pipeline specified as a command line parameter under its name. Experimental pipelines not yet implemented in the main build are located in **./experiments/Jupyter**. This section reviews them case by case, and the following section provides an extensive tutorial recorded at the recent OSPO Symposium 2022.
 
-- **2D self-patterning** is the most basic use-case implemented within the **./experiments/Jupyter/PolyPhy_2D_discrete_data** notebook. The ability of MCPM to generate a diversity of patterns with network characteristics is achieved by disabling the data marker deposition, leaving only the MCPM agents to generate the marker responsible for maintaining structure.<p>
+- **2D self-patterning** is the most basic use-case implemented within the **2d_discrete** pipeline. The ability of MCPM to generate a diversity of patterns with network characteristics is achieved by *disabling the data marker deposition*, leaving only the MCPM agents to generate the marker responsible for maintaining structure.<p>
   ![2D_self-patterning](https://user-images.githubusercontent.com/26778894/215976261-d9509124-e3bf-4b82-9cc8-b96a40ab3db2.jpg)
 </p>
 
-- **2D procedural pipeline** provide an easy environment to experiment with the behavior of *PolyPhy* in the presence of discrete data with different spatial frequencies. Editing (adding new data points) is also supported. This pipeline is implemented in the **./experiments/Jupyter/PolyPhy_2D_discrete_data** notebook.<p>
+- **2D procedural pipeline** provide an easy environment to experiment with the behavior of *PolyPhy* in the presence of discrete data with different spatial frequencies. Editing (adding new data points) is also supported. This is invoked by specifying **2d_discrete** pipeline without providing any input data file, thus prompting *PolyPhy* to generate the data procedurally.<p>
   ![2D_discrete_procedural](https://user-images.githubusercontent.com/26778894/215980005-f927d227-0090-46dd-8ec6-fde9b800dfa0.jpg)
 </p>
 
-- **2D discrete pipeline** implements the canonical way of working with custom data defined by a CSV file. The example below demonstrates fitting to a 2D projection of the SDSS galaxy dataset. This pipeline is implemented in the **./experiments/Jupyter/PolyPhy_2D_discrete_data** notebook.<p>
+- **2D discrete pipeline** implements the canonical way of working with custom data defined by a CSV file. The example below demonstrates fitting to a 2D projection of the SDSS galaxy dataset. It is invoked by specifying **2d_discrete** pipeline and a custom input data file.<p>
   ![2D_discrete_explicit](https://user-images.githubusercontent.com/26778894/215980486-f77da2ec-8780-4a23-bacc-a03c164ebe2a.jpg)
 </p>
 
-- **2D continuous pipeline** demonstrates the workflow with a continuous user-provided dataset. Instead of a discrete set of points as in the previous use-cases, the data is defined by a scalar field, which in 2D amounts to a grayscale image. The example below approximates the US road network using only a sparse population density map as the input. This pipeline is implemented in the **./experiments/Jupyter/PolyPhy_2D_continuous_data** notebook.<p>
+- **2D continuous pipeline** demonstrates the workflow with a continuous user-provided dataset. Instead of a discrete set of points as in the previous use-cases, the data is defined by a scalar field, which in 2D amounts to a grayscale image. The example below approximates the US road network using only a sparse population density map as the input. This pipeline is implemented in the **./experiments/Jupyter/PolyPhy_2D_continuous_data** notebook, to be ported to the main build.<p>
   ![2D_continuous](https://user-images.githubusercontent.com/26778894/215981222-6fa4b334-45d2-498f-8c5a-c150137574ac.jpg)
 </p>
 
-- **3D discrete pipeline** represents an equivalent functionality to the original *Polyphorm* implementation. The dataset consists of SDSS galaxies defined as a weighted collection of 3D points. THe visualization is based on volumetric ray marching simultaneously fetching the deposit and the trace fields. This pipeline is implemented in the **./experiments/Jupyter/PolyPhy_3D_discrete_data** notebook.<p>
+- **3D discrete pipeline** represents an equivalent functionality to the original *Polyphorm* implementation. The dataset consists of SDSS galaxies defined as a weighted collection of 3D points. The visualization is based on volumetric ray marching simultaneously fetching the deposit and the trace fields. This pipeline is invoked through the **3d_discrete** parameter.<p>
   ![3D_discrete_explicit](https://user-images.githubusercontent.com/26778894/215981925-96ed3322-0068-497d-a2e7-4543c7ef8e41.jpg)
 </p>
 
 ## How to Use PolyPhy
 Below is a recording of the [PolyPhy Workshop](https://elek.pub/workshop_cross2022.html) given as part of the [OSPO Symposium 2022](https://ospo.ucsc.edu/event/20220927/).<br/>
-This 93-minute workshop covers *PolyPhy*'s research background, all of the 5 above usecases, and extended technical discussion.
+This 90-minute workshop covers *PolyPhy*'s research background, all of the 5 above usecases, and extended technical discussion.
 
 [![](http://i3.ytimg.com/vi/3-hm7iTqz0U/hqdefault.jpg)](https://www.youtube.com/watch?v=3-hm7iTqz0U "PolyPhy Workshop")
 
