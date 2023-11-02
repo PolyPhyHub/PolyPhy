@@ -1,3 +1,8 @@
+# PolyPhy
+# License: https://github.com/PolyPhyHub/PolyPhy/blob/main/LICENSE
+# Author: Oskar Elek
+# Maintainers:
+
 import os
 import numpy as np
 import taichi as ti
