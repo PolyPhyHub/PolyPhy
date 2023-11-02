@@ -1,9 +1,50 @@
+[project]
+name = "polyphy-rule"
+version = "0.0.2"
+description = "description for polyphy testing"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+keywords = ["polyphy"]
+authors = [
+  {name = "author_name", email = "author@example.com" }
+]
+maintainers = [
+  {name = "maintainers_name", email = "maintainers@example.com" }
+]
+
 [build-system]
-# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
 requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-# For smarter version schemes and other configuration options,
-# check out https://github.com/pypa/setuptools_scm
 version_scheme = "no-guess-dev"
+
+[tool.poetry.dependencies]
+Sphinx = "4.5.0"
+coverage = "*"
+flake8 = "*"
+isort = "*"
+matplotlib = "3.5.3"
+nbmake = "*"
+numpy = "<=1.22.0"
+pytest-cov = "*"
+pytest-xdist = "*"
+pytest = "7.1.2"
+scipy = "*"
+setuptools = "65.5.1"
+sphinx = "*"
+taichi = "1.6.0"
+toml = "*"
+tox = "*"
+yapf = "*"
+ipywidgets = "*"
+pyvista = "*"
+trimesh = "*"
+PyMCubes = "*"
+scikit-image = "*"
+path = "*"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.extras]

@@ -20,3 +20,4 @@ pyvista
 trimesh
 PyMCubes
 scikit-image
+path

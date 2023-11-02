@@ -153,6 +153,7 @@ data/csv/TNG50_galmcpm_67.ascii
 data/csv/TNG50_galmcpm_91.ascii
 data/csv/TNG50_galmcpm_99.csv
 data/csv/TNG50_galmcpm_99_normalized.csv
-experiments/jupyter/production/imgui.ini
-data/csv/TNG50_galmcpm_99.ascii
-experiments/jupyter/production/imgui.ini
+
+.vscode/
+*/imgui.ini
+src/polyphy/imgui.ini
