@@ -1,16 +1,16 @@
 [project]
-name = "polyphy-rule"
-version = "0.0.2"
-description = "description for polyphy testing"
+name = "polyphy"
+version = "0.0.1"
+description = "description for polyphy"
 readme = "README.md"
 requires-python = ">=3.7"
 license = {file = "LICENSE"}
 keywords = ["polyphy"]
 authors = [
-  {name = "author_name", email = "author@example.com" }
+  {name = "Oskar Elek", email = "oskar.elek@gmail.com" }
 ]
 maintainers = [
-  {name = "maintainers_name", email = "maintainers@example.com" }
+  {name = "Prashant Jha", email = "prashant.bits01@gmail.com" }
 ]
 
 [build-system]

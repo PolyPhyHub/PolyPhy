@@ -1,0 +1,10 @@
+-   repo: local
+    rev: v0.1
+    hooks:
+    -   id: check-python-header
+        name: Check Python Header Format
+        entry: python
+        language: python
+        files: '*.py'
+        stages: [commit]
+        args: ['.github/scripts/pre_commit_hook.py']

@@ -1,3 +1,8 @@
+# PolyPhy
+# License: https://github.com/PolyPhyHub/PolyPhy/blob/main/LICENSE
+# Author: Oskar Elek
+# Maintainers:
+
 import os
 import taichi as ti
 from numpy.random import default_rng
