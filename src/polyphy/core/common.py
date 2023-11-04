@@ -39,8 +39,7 @@ class PPTypes:
             PPTypes.FLOAT_CPU = np.float16
             PPTypes.FLOAT_GPU = ti.f16
         else:
-            raise ValueError("Invalid float precision value. Supported values: \
-                                float64, float32, float16")
+            raise ValueError("Invalid float precision value. Supported values: float64, float32, float16")
 
 
 class PPConfig:

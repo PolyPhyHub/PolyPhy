@@ -25,12 +25,9 @@ class PPConfig_3DDiscrete(PPConfig):
         self.DOMAIN_SIZE_MAX = np.max(
             [ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1], ppData.DOMAIN_SIZE[2]])
         self.TRACE_RESOLUTION = PPTypes.INT_CPU((
-            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] /
-            self.DOMAIN_SIZE_MAX,
-            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] /
-            self.DOMAIN_SIZE_MAX,
-            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[2] /
-            self.DOMAIN_SIZE_MAX))
+            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX,
+            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX,
+            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[2] / self.DOMAIN_SIZE_MAX))
         self.DEPOSIT_RESOLUTION = (
             self.TRACE_RESOLUTION[0] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR,
             self.TRACE_RESOLUTION[1] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR,
@@ -138,12 +135,10 @@ class PPInternalData_3DDiscrete(PPInternalData):
         Logger.logToStdOut("info", 'Storing solution data in data/fits/')
         deposit = self.deposit_field.to_numpy()
         np.save(
-            self.ppConfig.ppData.ROOT + 'data/fits/deposit_' + current_stamp +
-            '.npy', deposit)
+            self.ppConfig.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
         trace = self.trace_field.to_numpy()
         np.save(
-            self.ppConfig.ppData.ROOT + 'data/fits/trace_' + current_stamp +
-            '.npy', trace)
+            self.ppConfig.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
         return current_stamp, deposit, trace
 
     def __init__(self, rng, ppKernels, ppConfig):
@@ -196,13 +191,8 @@ class PPInternalData_3DDiscrete(PPInternalData):
         Logger.logToStdOut(
             "info",
             'Total GPU memory allocated:', PPTypes.INT_CPU(
-                4 * (
-                    self.data_field.shape[0] * 4 +
-                    self.agents_field.shape[0] * 6 +
-                    self.deposit_field.shape[0] * self.deposit_field.shape[1] * 2 +
-                    self.trace_field.shape[0] * self.trace_field.shape[1] * 1 +
-                    self.vis_field.shape[0] * self.vis_field.shape[1] * 3
-                ) / 2 ** 20), 'MB')
+                4 * (self.data_field.shape[0] * 4 + self.agents_field.shape[0] * 6 + self.deposit_field.shape[0] * self.deposit_field.shape[1] * 2 + self.trace_field.shape[0] * self.trace_field.shape[1] * 1 + self.vis_field.shape[0] * self.vis_field.shape[1] * 3
+                     ) / 2 ** 20), 'MB')
         self.ppConfig = ppConfig
         self.ppKernels = ppKernels
         self.__init_internal_data__(ppKernels)
@@ -212,7 +202,11 @@ class PPSimulation_3DDiscrete(PPSimulation):
     def __drawGUI__(self, window, ppConfig):
         GuiHelper.draw(self, window, ppConfig)
 
-    def __init__(self, ppInternalData, ppConfig, batch_mode=False, num_iterations=-1):
+    def __init__(self, 
+                 ppInternalData, 
+                 ppConfig, 
+                 batch_mode=False, 
+                 num_iterations=-1):
         self.current_deposit_index = 0
         self.do_export = False
         self.do_screenshot = False

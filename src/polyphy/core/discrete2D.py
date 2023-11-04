@@ -21,20 +21,16 @@ class PPConfig_2DDiscrete(PPConfig):
         self.ppData = ppData
         self.TRACE_RESOLUTION_MAX = 1440
         self.DATA_TO_AGENTS_RATIO = (
-            PPTypes.FLOAT_CPU(ppData.N_DATA) /
-            PPTypes.FLOAT_CPU(ppData.N_AGENTS)
+            PPTypes.FLOAT_CPU(ppData.N_DATA) / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
         )
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]])
-        self.TRACE_RESOLUTION = PPTypes.INT_CPU(
-            (PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] /
-                self.DOMAIN_SIZE_MAX, PPTypes.FLOAT_CPU(
-                self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] /
-                self.DOMAIN_SIZE_MAX)
-        )
+        self.TRACE_RESOLUTION = PPTypes.INT_CPU((
+            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] / self.DOMAIN_SIZE_MAX,
+            PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[1] / self.DOMAIN_SIZE_MAX
+            ))
         self.DEPOSIT_RESOLUTION = (
-            self.TRACE_RESOLUTION[0] //
-            PPConfig.DEPOSIT_DOWNSCALING_FACTOR, self.TRACE_RESOLUTION[1] //
-            PPConfig.DEPOSIT_DOWNSCALING_FACTOR
+            self.TRACE_RESOLUTION[0] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR,
+            self.TRACE_RESOLUTION[1] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR
         )
 
         # Check if these are set and if not give them decent initial estimates
@@ -65,12 +61,10 @@ class PPInputData_2DDiscrete(PPInputData):
         self.domain_min = (np.min(self.data[:, 0]), np.min(self.data[:, 1]))
         self.domain_max = (np.max(self.data[:, 0]), np.max(self.data[:, 1]))
         self.domain_size = np.subtract(self.domain_max, self.domain_min)
-        self.DOMAIN_MIN = (self.domain_min[0] - PPConfig.DOMAIN_MARGIN *
-                           self.domain_size[0], self.domain_min[1] -
-                           PPConfig.DOMAIN_MARGIN * self.domain_size[1])
-        self.DOMAIN_MAX = (self.domain_max[0] + PPConfig.DOMAIN_MARGIN *
-                           self.domain_size[0], self.domain_max[1] +
-                           PPConfig.DOMAIN_MARGIN * self.domain_size[1])
+        self.DOMAIN_MIN = (self.domain_min[0] - PPConfig.DOMAIN_MARGIN * self.domain_size[0],
+                           self.domain_min[1] - PPConfig.DOMAIN_MARGIN * self.domain_size[1])
+        self.DOMAIN_MAX = (self.domain_max[0] + PPConfig.DOMAIN_MARGIN * self.domain_size[0],
+                           self.domain_max[1] + PPConfig.DOMAIN_MARGIN * self.domain_size[1])
         self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
         self.AVG_WEIGHT = np.mean(self.data[:, 2])
 
@@ -83,12 +77,12 @@ class PPInputData_2DDiscrete(PPInputData):
         self.DOMAIN_MIN = (0.0, 0.0)
         self.DOMAIN_MAX = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
         self.data = np.zeros(shape=(self.N_DATA, 3), dtype=PPTypes.FLOAT_CPU)
-        self.data[:, 0] = rng.normal(loc=self.DOMAIN_MIN[0] + 0.5 *
-                                     self.DOMAIN_MAX[0], scale=0.13 *
-                                     self.DOMAIN_SIZE[0], size=self.N_DATA)
-        self.data[:, 1] = rng.normal(loc=self.DOMAIN_MIN[1] + 0.5 *
-                                     self.DOMAIN_MAX[1], scale=0.13 *
-                                     self.DOMAIN_SIZE[1], size=self.N_DATA)
+        self.data[:, 0] = rng.normal(loc=self.DOMAIN_MIN[0] + 0.5 * self.DOMAIN_MAX[0],
+                                     scale=0.13 * self.DOMAIN_SIZE[0],
+                                     size=self.N_DATA)
+        self.data[:, 1] = rng.normal(loc=self.DOMAIN_MIN[1] + 0.5 * self.DOMAIN_MAX[1],
+                                     scale=0.13 * self.DOMAIN_SIZE[1],
+                                     size=self.N_DATA)
         self.data[:, 2] = np.mean(self.data[:, 2])
 
 
@@ -139,7 +133,8 @@ class PPInternalData_2DDiscrete(PPInternalData):
         self.agents[:, 1] = rng.uniform(low=ppConfig.ppData.DOMAIN_MIN[1] + 0.001,
                                         high=ppConfig.ppData.DOMAIN_MAX[1] - 0.001,
                                         size=ppConfig.ppData.N_AGENTS)
-        self.agents[:, 2] = rng.uniform(low=0.0, high=2.0 * np.pi,
+        self.agents[:, 2] = rng.uniform(low=0.0,
+                                        high=2.0 * np.pi,
                                         size=ppConfig.ppData.N_AGENTS)
         self.agents[:, 3] = 1.0
         Logger.logToStdOut("info", 'Agent sample:', self.agents[0, :])
@@ -155,16 +150,9 @@ class PPInternalData_2DDiscrete(PPInternalData):
         self.vis_field = ti.Vector.field(n=3, dtype=PPTypes.FLOAT_GPU,
                                          shape=ppConfig.VIS_RESOLUTION)
         Logger.logToStdOut("info", 'Total GPU memory allocated:',
-                           PPTypes.INT_CPU(4 * (self.data_field.shape[0] * 3 +
-                                                self.agents_field.shape[0] * 4 +
-                                                self.deposit_field.shape[0] *
-                                                self.deposit_field.shape[1] * 2 +
-                                                self.trace_field.shape[0] *
-                                                self.trace_field.shape[1] * 1 +
-                                                self.vis_field.shape[0] *
-                                                self.vis_field.shape[1] * 3
-                                                ) / 2 ** 20), 'MB')
-
+                           PPTypes.INT_CPU(
+                               4 * (self.data_field.shape[0] * 3 + self.agents_field.shape[0] * 4 + self.deposit_field.shape[0] * self.deposit_field.shape[1] * 2 + self.trace_field.shape[0] * self.trace_field.shape[1] * 1 + self.vis_field.shape[0] * self.vis_field.shape[1] * 3
+                                    ) / 2 ** 20), 'MB')
         self.ppConfig = ppConfig
         self.ppKernels = ppKernels
         self.__init_internal_data__(ppKernels)
