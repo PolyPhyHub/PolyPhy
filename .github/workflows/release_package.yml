@@ -19,7 +19,7 @@ jobs:
 
       - name: Check if Python package already exists
         run: |
-          pip install polyphy==$(cat pyproject.toml | head -3 | tail -1 | cut -d '"' -f 2) && echo "true" > ./flag || echo "false" > ./flag
+          pip install PolyPhyPy==$(cat pyproject.toml | head -3 | tail -1 | cut -d '"' -f 2) && echo "true" > ./flag || echo "false" > ./flag
 
       - name: Build and publish package
         env:
