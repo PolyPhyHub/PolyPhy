@@ -128,15 +128,13 @@ class CliHelper:
             ppConfig.setter("input_file", str(args.input_file))
         else:
             ppConfig.setter("input_file", '')
-            raise AssertionError("Please specify the main input data file \
-                                    (string relative to the root directory)")
+            raise AssertionError("Please specify the main input data file (string relative to the root directory)")
         if args.batch_mode:
             print("Batch mode activated!")
             if args.num_iterations:
                 print(f"Number of iterations: {int(args.num_iterations)}")
             else:
-                raise AssertionError("Please set number of iterations for batch mode \
-                                     using -n <int>")
+                raise AssertionError("Please set number of iterations for batch mode using -n <int>")
         if args.num_iterations and not args.batch_mode:
             raise AssertionError("Please set to batch mode")
         if args.sensing_dist:

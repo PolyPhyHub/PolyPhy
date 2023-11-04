@@ -14,25 +14,21 @@ class GuiHelper:
     def draw(self, window, ppConfig):
         # Draw main interactive control GUI
         window.GUI.begin(
-            'Main', 0.01, 0.01, 0.32 * 1024.0 /
-            PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[0]), 0.74 * 1024.0 /
-            PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
+            'Main', 0.01, 0.01, 0.32 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[0]),
+            0.74 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
         window.GUI.text("MCPM parameters:")
         ppConfig.sense_distance = window.GUI.slider_float(
-            'Sensing dist', ppConfig.sense_distance,
-            0.1, 0.05 * ppConfig.DOMAIN_SIZE_MAX)
+            'Sensing dist', ppConfig.sense_distance, 0.1, 0.05 * ppConfig.DOMAIN_SIZE_MAX)
         ppConfig.sense_angle = window.GUI.slider_float(
             'Sensing angle', ppConfig.sense_angle, 0.01, 0.5 * np.pi)
         ppConfig.sampling_exponent = window.GUI.slider_float(
             'Sampling expo', ppConfig.sampling_exponent, 0.1, 5.0)
         ppConfig.step_size = window.GUI.slider_float(
-            'Step size', ppConfig.step_size,
-            0.0, 0.005 * ppConfig.DOMAIN_SIZE_MAX)
+            'Step size', ppConfig.step_size, 0.0, 0.005 * ppConfig.DOMAIN_SIZE_MAX)
         ppConfig.data_deposit = window.GUI.slider_float(
             'Data deposit', ppConfig.data_deposit, 0.0, ppConfig.MAX_DEPOSIT)
         ppConfig.agent_deposit = window.GUI.slider_float(
-            'Agent deposit', ppConfig.agent_deposit, 0.0,
-            10.0 * ppConfig.MAX_DEPOSIT * ppConfig.DATA_TO_AGENTS_RATIO)
+            'Agent deposit', ppConfig.agent_deposit, 0.0,10.0 * ppConfig.MAX_DEPOSIT * ppConfig.DATA_TO_AGENTS_RATIO)
         ppConfig.deposit_attenuation = window.GUI.slider_float(
             'Deposit attn', ppConfig.deposit_attenuation, 0.8, 0.999)
         ppConfig.trace_attenuation = window.GUI.slider_float(
@@ -43,70 +39,34 @@ class GuiHelper:
             'Trace vis', math.log(ppConfig.trace_vis, 10.0), -3.0, 3.0))
 
         window.GUI.text("Distance distribution:")
-        if window.GUI.checkbox(
-            "Constant", ppConfig.distance_sampling_distribution
-                == ppConfig.EnumDistanceSamplingDistribution.CONSTANT):
-            ppConfig.distance_sampling_distribution = \
-                ppConfig.EnumDistanceSamplingDistribution.CONSTANT
-        if window.GUI.checkbox(
-            "Exponential", ppConfig.distance_sampling_distribution
-                == ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL):
-            ppConfig.distance_sampling_distribution = \
-                ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL
-        if window.GUI.checkbox(
-            "Maxwell-Boltzmann", ppConfig.distance_sampling_distribution
-                == ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
-            ppConfig.distance_sampling_distribution = \
-                ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
+        if window.GUI.checkbox("Constant", ppConfig.distance_sampling_distribution == ppConfig.EnumDistanceSamplingDistribution.CONSTANT):
+            ppConfig.distance_sampling_distribution = ppConfig.EnumDistanceSamplingDistribution.CONSTANT
+        if window.GUI.checkbox("Exponential", ppConfig.distance_sampling_distribution == ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL):
+            ppConfig.distance_sampling_distribution = ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL
+        if window.GUI.checkbox("Maxwell-Boltzmann", ppConfig.distance_sampling_distribution == ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
+            ppConfig.distance_sampling_distribution = ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
         window.GUI.text("Directional distribution:")
-        if window.GUI.checkbox(
-            "Discrete", ppConfig.directional_sampling_distribution
-                == ppConfig.EnumDirectionalSamplingDistribution.DISCRETE):
-            ppConfig.directional_sampling_distribution = \
-                ppConfig.EnumDirectionalSamplingDistribution.DISCRETE
-        if window.GUI.checkbox(
-            "Cone", ppConfig.directional_sampling_distribution
-                == ppConfig.EnumDirectionalSamplingDistribution.CONE):
-            ppConfig.directional_sampling_distribution = \
-                ppConfig.EnumDirectionalSamplingDistribution.CONE
+        if window.GUI.checkbox("Discrete", ppConfig.directional_sampling_distribution == ppConfig.EnumDirectionalSamplingDistribution.DISCRETE):
+            ppConfig.directional_sampling_distribution = ppConfig.EnumDirectionalSamplingDistribution.DISCRETE
+        if window.GUI.checkbox("Cone", ppConfig.directional_sampling_distribution == ppConfig.EnumDirectionalSamplingDistribution.CONE):
+            ppConfig.directional_sampling_distribution = ppConfig.EnumDirectionalSamplingDistribution.CONE
         window.GUI.text("Directional mutation:")
-        if window.GUI.checkbox(
-            "Deterministic", ppConfig.directional_mutation_type
-                == ppConfig.EnumDirectionalMutationType.DETERMINISTIC):
-            ppConfig.directional_mutation_type = \
-                ppConfig.EnumDirectionalMutationType.DETERMINISTIC
-        if window.GUI.checkbox(
-            "Stochastic", ppConfig.directional_mutation_type
-                == ppConfig.EnumDirectionalMutationType.PROBABILISTIC):
-            ppConfig.directional_mutation_type = \
-                ppConfig.EnumDirectionalMutationType.PROBABILISTIC
+        if window.GUI.checkbox("Deterministic", ppConfig.directional_mutation_type == ppConfig.EnumDirectionalMutationType.DETERMINISTIC):
+            ppConfig.directional_mutation_type = ppConfig.EnumDirectionalMutationType.DETERMINISTIC
+        if window.GUI.checkbox("Stochastic", ppConfig.directional_mutation_type == ppConfig.EnumDirectionalMutationType.PROBABILISTIC):
+            ppConfig.directional_mutation_type = ppConfig.EnumDirectionalMutationType.PROBABILISTIC
         window.GUI.text("Deposit fetching:")
-        if window.GUI.checkbox(
-            "Nearest neighbor", ppConfig.deposit_fetching_strategy
-                == ppConfig.EnumDepositFetchingStrategy.NN):
-            ppConfig.deposit_fetching_strategy = \
-                ppConfig.EnumDepositFetchingStrategy.NN
-        if window.GUI.checkbox(
-            "Noise-perturbed NN", ppConfig.deposit_fetching_strategy
-                == ppConfig.EnumDepositFetchingStrategy.NN_PERTURBED):
-            ppConfig.deposit_fetching_strategy = \
-                ppConfig.EnumDepositFetchingStrategy.NN_PERTURBED
+        if window.GUI.checkbox("Nearest neighbor", ppConfig.deposit_fetching_strategy == ppConfig.EnumDepositFetchingStrategy.NN):
+            ppConfig.deposit_fetching_strategy = ppConfig.EnumDepositFetchingStrategy.NN
+        if window.GUI.checkbox("Noise-perturbed NN", ppConfig.deposit_fetching_strategy == ppConfig.EnumDepositFetchingStrategy.NN_PERTURBED):
+            ppConfig.deposit_fetching_strategy = ppConfig.EnumDepositFetchingStrategy.NN_PERTURBED
         window.GUI.text("Agent boundary handling:")
-        if window.GUI.checkbox(
-            "Wrap around", ppConfig.agent_boundary_handling
-                == ppConfig.EnumAgentBoundaryHandling.WRAP):
-            ppConfig.agent_boundary_handling = \
-                ppConfig.EnumAgentBoundaryHandling.WRAP
-        if window.GUI.checkbox(
-            "Reinitialize center", ppConfig.agent_boundary_handling
-                == ppConfig.EnumAgentBoundaryHandling.REINIT_CENTER):
-            ppConfig.agent_boundary_handling = \
-                ppConfig.EnumAgentBoundaryHandling.REINIT_CENTER
-        if window.GUI.checkbox(
-            "Reinitialize randomly", ppConfig.agent_boundary_handling
-                == ppConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
-            ppConfig.agent_boundary_handling = \
-                ppConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY
+        if window.GUI.checkbox("Wrap around", ppConfig.agent_boundary_handling == ppConfig.EnumAgentBoundaryHandling.WRAP):
+            ppConfig.agent_boundary_handling = ppConfig.EnumAgentBoundaryHandling.WRAP
+        if window.GUI.checkbox("Reinitialize center", ppConfig.agent_boundary_handling == ppConfig.EnumAgentBoundaryHandling.REINIT_CENTER):
+            ppConfig.agent_boundary_handling = ppConfig.EnumAgentBoundaryHandling.REINIT_CENTER
+        if window.GUI.checkbox("Reinitialize randomly", ppConfig.agent_boundary_handling == ppConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY):
+            ppConfig.agent_boundary_handling = ppConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY
 
         window.GUI.text("Misc controls:")
         self.do_simulate = window.GUI.checkbox("Run simulation", self.do_simulate)
@@ -119,8 +79,7 @@ class GuiHelper:
         # Do not exceed prescribed line length of 120 characters,
         # there is no text wrapping in Taichi GUI
         window.GUI.begin('Help', 0.35 * 1024.0 / PPTypes.FLOAT_CPU(
-            ppConfig.VIS_RESOLUTION[0]),
-            0.01, 0.6, 0.30 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
+            ppConfig.VIS_RESOLUTION[0]), 0.01, 0.6, 0.30 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
         window.GUI.text("Welcome to PolyPhy 2D GUI variant written by researchers at \
                         UCSC/OSPO with the help of numerous external contributors\n\
                         (https://github.com/PolyPhyHub).\

@@ -81,31 +81,23 @@ class PPKernels_2DDiscrete(PPKernels):
             # Generate new mutated direction by perturbing the original
             dir_fwd = self.angle_to_dir_2D(angle)
             angle_mut = angle
-            if directional_sampling_distribution \
-                    == PPConfig.EnumDirectionalSamplingDistribution.DISCRETE:
-                angle_mut += (
-                    1.0 if ti.random(dtype=PPTypes.FLOAT_GPU) > 0.5 else -1.0)\
-                        * sense_angle
-            elif directional_sampling_distribution \
-                    == PPConfig.EnumDirectionalSamplingDistribution.CONE:
-                angle_mut += 2.0 * (ti.random(dtype=PPTypes.FLOAT_GPU) - 0.5)\
-                    * sense_angle
+            if directional_sampling_distribution == PPConfig.EnumDirectionalSamplingDistribution.DISCRETE:
+                angle_mut += (1.0 if ti.random(dtype=PPTypes.FLOAT_GPU) > 0.5 else -1.0) * sense_angle
+            elif directional_sampling_distribution == PPConfig.EnumDirectionalSamplingDistribution.CONE:
+                angle_mut += 2.0 * (ti.random(dtype=PPTypes.FLOAT_GPU) - 0.5) * sense_angle
             dir_mut = self.angle_to_dir_2D(angle_mut)
 
             # Generate sensing distance for the agent, constant or probabilistic
             agent_sensing_distance = sense_distance
             distance_scaling_factor = 1.0
-            if distance_sampling_distribution \
-                    == PPConfig.EnumDistanceSamplingDistribution.EXPONENTIAL:
+            if distance_sampling_distribution == PPConfig.EnumDistanceSamplingDistribution.EXPONENTIAL:
                 xi = timath.clamp(ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999)
                 # log & pow are unstable in extremes
                 distance_scaling_factor = -ti.log(xi)
-            elif distance_sampling_distribution \
-                    == PPConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN:
+            elif distance_sampling_distribution == PPConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN:
                 xi = timath.clamp(ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999)
                 # log & pow are unstable in extremes
-                distance_scaling_factor = -0.3033 * ti.log(
-                    (ti.pow(xi + 0.005, -0.4) - 0.9974) / 7.326)
+                distance_scaling_factor = -0.3033 * ti.log((ti.pow(xi + 0.005, -0.4) - 0.9974) / 7.326)
             agent_sensing_distance *= distance_scaling_factor
 
             # Fetch deposit to guide the agent
@@ -113,54 +105,40 @@ class PPKernels_2DDiscrete(PPKernels):
             deposit_mut = 0.0
             if deposit_fetching_strategy == PPConfig.EnumDepositFetchingStrategy.NN:
                 deposit_fwd = deposit_field[self.world_to_grid_2D(
-                    pos + agent_sensing_distance * dir_fwd, PPTypes.VEC2f(DOMAIN_MIN),
+                    pos + agent_sensing_distance * dir_fwd,
+                    PPTypes.VEC2f(DOMAIN_MIN),
                     PPTypes.VEC2f(DOMAIN_MAX),
                     PPTypes.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
                 deposit_mut = deposit_field[self.world_to_grid_2D(
                     pos + agent_sensing_distance * dir_mut,
-                    PPTypes.VEC2f(DOMAIN_MIN), PPTypes.VEC2f(DOMAIN_MAX),
+                    PPTypes.VEC2f(DOMAIN_MIN),
+                    PPTypes.VEC2f(DOMAIN_MAX),
                     PPTypes.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
-            elif deposit_fetching_strategy \
-                    == PPConfig.EnumDepositFetchingStrategy.NN_PERTURBED:
+            elif deposit_fetching_strategy == PPConfig.EnumDepositFetchingStrategy.NN_PERTURBED:
                 # Fetches the deposit by perturbing the original position by small delta
                 # Provides cheap stochastic filtering instead of multi-fetch filters
-                field_dd = 2.0 * ti.cast(DOMAIN_SIZE[0], PPTypes.FLOAT_GPU) / \
-                    ti.cast(DEPOSIT_RESOLUTION[0], PPTypes.FLOAT_GPU)
-                pos_fwd = pos + agent_sensing_distance * dir_fwd + (
-                    field_dd * ti.random(dtype=PPTypes.FLOAT_GPU) *
-                    self.angle_to_dir_2D(2.0 * timath.pi *
-                                         ti.random(dtype=PPTypes.FLOAT_GPU)))
+                field_dd = 2.0 * ti.cast(DOMAIN_SIZE[0], PPTypes.FLOAT_GPU) / ti.cast(DEPOSIT_RESOLUTION[0], PPTypes.FLOAT_GPU)
+                pos_fwd = pos + agent_sensing_distance * dir_fwd + (field_dd * ti.random(dtype=PPTypes.FLOAT_GPU) * self.angle_to_dir_2D(2.0 * timath.pi * ti.random(dtype=PPTypes.FLOAT_GPU)))
                 deposit_fwd = deposit_field[self.world_to_grid_2D(
                     pos_fwd, PPTypes.VEC2f(DOMAIN_MIN),
                     PPTypes.VEC2f(DOMAIN_MAX),
                     PPTypes.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
-                pos_mut = pos + agent_sensing_distance * dir_mut + (
-                    field_dd * ti.random(dtype=PPTypes.FLOAT_GPU) *
-                    self.angle_to_dir_2D(2.0 * timath.pi *
-                                         ti.random(dtype=PPTypes.FLOAT_GPU)))
+                pos_mut = pos + agent_sensing_distance * dir_mut + (field_dd * ti.random(dtype=PPTypes.FLOAT_GPU) * self.angle_to_dir_2D(2.0 * timath.pi * ti.random(dtype=PPTypes.FLOAT_GPU)))
                 deposit_mut = deposit_field[self.world_to_grid_2D(
-                    pos_mut, PPTypes.VEC2f(DOMAIN_MIN),
+                    pos_mut,
+                    PPTypes.VEC2f(DOMAIN_MIN),
                     PPTypes.VEC2f(DOMAIN_MAX),
                     PPTypes.VEC2i(DEPOSIT_RESOLUTION))][current_deposit_index]
 
             # Generate new direction for the agent based on the sampled deposit
             angle_new = angle
-            if directional_mutation_type \
-                    == PPConfig.EnumDirectionalMutationType.DETERMINISTIC:
-                angle_new = (
-                    steering_rate * angle_mut + (1.0-steering_rate) * angle) if (
-                        deposit_mut > deposit_fwd) else (
-                            angle)
-            elif directional_mutation_type \
-                    == PPConfig.EnumDirectionalMutationType.PROBABILISTIC:
+            if directional_mutation_type == PPConfig.EnumDirectionalMutationType.DETERMINISTIC:
+                angle_new = (steering_rate * angle_mut + (1.0-steering_rate) * angle) if (deposit_mut > deposit_fwd) else (angle)
+            elif directional_mutation_type == PPConfig.EnumDirectionalMutationType.PROBABILISTIC:
                 p_remain = ti.pow(deposit_fwd, sampling_exponent)
                 p_mutate = ti.pow(deposit_mut, sampling_exponent)
                 mutation_probability = p_mutate / (p_remain + p_mutate)
-                angle_new = (
-                    steering_rate * angle_mut + (1.0-steering_rate) * angle) if (
-                        ti.random(
-                            dtype=PPTypes.FLOAT_GPU) < mutation_probability) else (
-                            angle)
+                angle_new = (steering_rate * angle_mut + (1.0-steering_rate) * angle) if (ti.random(dtype=PPTypes.FLOAT_GPU) < mutation_probability) else (angle)
             dir_new = self.angle_to_dir_2D(angle_new)
             pos_new = pos + step_size * distance_scaling_factor * dir_new
 
@@ -172,33 +150,30 @@ class PPKernels_2DDiscrete(PPKernels):
                 pos_new[1] = self.custom_mod(
                     pos_new[1] - DOMAIN_MIN[1] + DOMAIN_SIZE[1],
                     DOMAIN_SIZE[1]) + DOMAIN_MIN[1]
-            elif agent_boundary_handling \
-                    == PPConfig.EnumAgentBoundaryHandling.REINIT_CENTER:
+            elif agent_boundary_handling == PPConfig.EnumAgentBoundaryHandling.REINIT_CENTER:
                 if pos_new[0] <= DOMAIN_MIN[0] \
                     or pos_new[0] >= DOMAIN_MAX[0] \
                     or pos_new[1] <= DOMAIN_MIN[1] \
                         or pos_new[1] >= DOMAIN_MAX[1]:
                     pos_new[0] = 0.5 * (DOMAIN_MIN[0] + DOMAIN_MAX[0])
                     pos_new[1] = 0.5 * (DOMAIN_MIN[1] + DOMAIN_MAX[1])
-            elif agent_boundary_handling \
-                    == PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
+            elif agent_boundary_handling == PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
                 if pos_new[0] <= DOMAIN_MIN[0] \
                     or pos_new[0] >= DOMAIN_MAX[0] \
                     or pos_new[1] <= DOMAIN_MIN[1] \
                         or pos_new[1] >= DOMAIN_MAX[1]:
                     pos_new[0] = DOMAIN_MIN[0] + timath.clamp(
-                        ti.random(dtype=PPTypes.FLOAT_GPU),
-                        0.001, 0.999) * DOMAIN_SIZE[0]
+                        ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999) * DOMAIN_SIZE[0]
                     pos_new[1] = DOMAIN_MIN[1] + timath.clamp(
-                        ti.random(dtype=PPTypes.FLOAT_GPU),
-                        0.001, 0.999) * DOMAIN_SIZE[1]
+                        ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999) * DOMAIN_SIZE[1]
 
             agents_field[agent][0] = pos_new[0]
             agents_field[agent][1] = pos_new[1]
             agents_field[agent][2] = angle_new
 
             # Generate deposit and trace at the new position
-            deposit_cell = self.world_to_grid_2D(pos_new, PPTypes.VEC2f(DOMAIN_MIN),
+            deposit_cell = self.world_to_grid_2D(pos_new,
+                                                 PPTypes.VEC2f(DOMAIN_MIN),
                                                  PPTypes.VEC2f(DOMAIN_MAX),
                                                  PPTypes.VEC2i(DEPOSIT_RESOLUTION))
             deposit_field[deposit_cell][current_deposit_index] += agent_deposit * weight
@@ -249,8 +224,7 @@ class PPKernels_2DDiscrete(PPKernels):
         for cell in ti.grouped(trace_field):
             # Perturb the attenuation by a small factor
             # to avoid accumulating quantization errors
-            trace_field[cell][0] *= (
-                attenuation - 0.001 + 0.002 * ti.random(dtype=PPTypes.FLOAT_GPU))
+            trace_field[cell][0] *= (attenuation - 0.001 + 0.002 * ti.random(dtype=PPTypes.FLOAT_GPU))
         return
 
     @ti.kernel
@@ -276,6 +250,5 @@ class PPKernels_2DDiscrete(PPKernels):
                 PPTypes.VEC3f(
                     trace_vis * trace_val,
                     deposit_vis * deposit_val,
-                    ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val),
-                           3.0)), 1.0/2.2)
+                    ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)), 1.0/2.2)
         return
