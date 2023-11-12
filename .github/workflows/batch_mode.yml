@@ -22,16 +22,13 @@ jobs:
         python3 -m pip install --upgrade pip
         pip install -r requirements.txt 
 
-    - name: Change directory to src/polyphy/
-      run: cd src/polyphy/
-
     - name: Run polyphy.py for 2D_discrete
       run: |
-        python3 polyphy.py 2d_discrete -b -n 100 -f data/csv/sample_2D_linW.csv
+        cd src/polyphy/ && python3 polyphy.py 2d_discrete -b -n 100 -f data/csv/sample_2D_linW.csv
 
     - name: Run polyphy.py for 3D_discrete
       run: |
-        python3 polyphy.py 3d_discrete -b -n 100 -f data/csv/sample_3D_linW.csv
+        cd src/polyphy/ && python3 polyphy.py 3d_discrete -b -n 100 -f data/csv/sample_3D_linW.csv
 
     - name: Check if 4 files are created in data/fits
       run: |
