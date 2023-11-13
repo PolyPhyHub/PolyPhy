@@ -31,7 +31,8 @@ class PPConfig_3DDiscrete(PPConfig):
         self.DEPOSIT_RESOLUTION = (
             self.TRACE_RESOLUTION[0] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR,
             self.TRACE_RESOLUTION[1] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR,
-            self.TRACE_RESOLUTION[2] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR)
+            self.TRACE_RESOLUTION[2] // PPConfig.DEPOSIT_DOWNSCALING_FACTOR
+            )
 
         # Check if these are set and if not give them decent initial estimates
         if self.sense_distance < 1.e-4:
@@ -202,10 +203,10 @@ class PPSimulation_3DDiscrete(PPSimulation):
     def __drawGUI__(self, window, ppConfig):
         GuiHelper.draw(self, window, ppConfig)
 
-    def __init__(self, 
-                 ppInternalData, 
-                 ppConfig, 
-                 batch_mode=False, 
+    def __init__(self,
+                 ppInternalData,
+                 ppConfig,
+                 batch_mode=False,
                  num_iterations=-1):
         self.current_deposit_index = 0
         self.do_export = False

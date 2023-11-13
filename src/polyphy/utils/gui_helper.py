@@ -28,7 +28,7 @@ class GuiHelper:
         ppConfig.data_deposit = window.GUI.slider_float(
             'Data deposit', ppConfig.data_deposit, 0.0, ppConfig.MAX_DEPOSIT)
         ppConfig.agent_deposit = window.GUI.slider_float(
-            'Agent deposit', ppConfig.agent_deposit, 0.0,10.0 * ppConfig.MAX_DEPOSIT * ppConfig.DATA_TO_AGENTS_RATIO)
+            'Agent deposit', ppConfig.agent_deposit, 0.0, 10.0 * ppConfig.MAX_DEPOSIT * ppConfig.DATA_TO_AGENTS_RATIO)
         ppConfig.deposit_attenuation = window.GUI.slider_float(
             'Deposit attn', ppConfig.deposit_attenuation, 0.8, 0.999)
         ppConfig.trace_attenuation = window.GUI.slider_float(
