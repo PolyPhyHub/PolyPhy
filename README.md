@@ -46,13 +46,13 @@ pip install -r requirements.txt
 ```
 Afterwards, navigate to **./src/polyphy** and run
 ```
-python polyphy.py 2d_discrete -f "data/csv/sample_2D_linW.csv"
+python polyphy.py 2d_discrete -f "data/csv/sample_2D_linW.csv" -t 1440
 ```
-for the standard 2D pipeline using the provided sample 2D dataset, or
+for the standard 2D pipeline using the provided sample 2D dataset and max trace resolution of 1440 (which will also determine the window resolution), or
 ```
-python polyphy.py 3d_discrete -f "data/csv/sample_3D_linW.csv"
+python polyphy.py 3d_discrete -f "data/csv/sample_3D_linW.csv -t 512 -x 1280 -y 720"
 ```
-to invoke the standard 3D discrete pipeline on sample data. You can also specify a custom CSV file (see the sample data for the format details, typically the data are tuples with 2 or 3 spatial coorinates followed by weights for each data point). The functionality of these pipelines is described below.
+to invoke the standard 3D discrete pipeline on sample data, with max trace resolution of 512 and window resolution of 1280x720. You can also specify a custom CSV file (see the sample data for the format details, typically the data are tuples with 2 or 3 spatial coorinates followed by weights for each data point). The functionality of these pipelines is described below.
 
 To display help on the available CLI parameters, simply run the respective command without any arguments.
 
