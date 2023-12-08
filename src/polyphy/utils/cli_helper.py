@@ -27,6 +27,21 @@ class CliHelper:
             type=str,
             help="Main input data file (string relative to the root directory)")
         parser.add_argument(
+            '-x',
+            '--window-res-x',
+            type=int,
+            help="X resolution of the main window")
+        parser.add_argument(
+            '-y',
+            '--window-res-y',
+            type=int,
+            help="Y resolution of the main window")
+        parser.add_argument(
+            '-t',
+            '--trace-res-max',
+            type=int,
+            help="Maximum resolution of the trace field (remaining dimensions will be determined automatically)")
+        parser.add_argument(
             '-b',
             '--batch-mode',
             action='store_true',
@@ -128,17 +143,19 @@ class CliHelper:
             ppConfig.setter("input_file", str(args.input_file))
         else:
             ppConfig.setter("input_file", '')
-            raise AssertionError("Please specify the main input data file \
-                                    (string relative to the root directory)")
+            # raise AssertionError("Please specify the main input data file (string relative to the root directory)")
         if args.batch_mode:
             print("Batch mode activated!")
             if args.num_iterations:
                 print(f"Number of iterations: {int(args.num_iterations)}")
             else:
-                raise AssertionError("Please set number of iterations for batch mode \
-                                     using -n <int>")
+                raise AssertionError("Please set number of iterations for batch mode using -n <int>")
         if args.num_iterations and not args.batch_mode:
             raise AssertionError("Please set to batch mode")
+        if args.window_res_x and args.window_res_y:
+            ppConfig.setter("VIS_RESOLUTION", (args.window_res_x, args.window_res_y))
+        if args.trace_res_max:
+            ppConfig.setter("TRACE_RESOLUTION_MAX", args.trace_res_max)
         if args.sensing_dist:
             ppConfig.setter("sense_distance", args.sensing_dist)
         if args.sensing_angle:

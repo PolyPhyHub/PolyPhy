@@ -118,71 +118,41 @@ class GuiHelper:
         # Help window
         # Do not exceed prescribed line length of 120 characters,
         # there is no text wrapping in Taichi GUI
-        window.GUI.begin('Help', 0.35 * 1024.0 / PPTypes.FLOAT_CPU(
-            ppConfig.VIS_RESOLUTION[0]),
-            0.01, 0.6, 0.30 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
-        window.GUI.text("Welcome to PolyPhy 2D GUI variant written by researchers at \
-                        UCSC/OSPO with the help of numerous external contributors\n\
-                        (https://github.com/PolyPhyHub).\
-                        PolyPhy implements MCPM, an agent-based, stochastic,\
-                        pattern forming algorithm designed\nby Elek et al, inspired by\
-                        Physarum polycephalum slime mold. Below is a quick reference\
-                        guide explaining the parameters\nand features available\
-                         in the interface. The reference as well as other panels can be\
-                         hidden using the arrow button, moved,\nand rescaled.")
+        window.GUI.begin('Help', 0.35 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[0]), 0.01, 0.63, 0.30 * 1024.0 / PPTypes.FLOAT_CPU(ppConfig.VIS_RESOLUTION[1]))
+        window.GUI.text("Welcome to PolyPhy GUI variant written by researchers at UC Santa Cruz/OSPO with the help of numerous external contributors\n(https://github.com/PolyPhyHub). PolyPhy implements MCPM, an agent-based, stochastic, pattern forming algorithm designed\nby Elek et al, inspired by Physarum polycephalum slime mold. Below is a quick reference guide explaining the parameters\nand features available in the interface.")
+        window.GUI.text("")
+        window.GUI.text("This quick reference as well as other panels can be folded using the arrow button, moved, and rescaled.")
         window.GUI.text("")
         window.GUI.text("PARAMETERS")
-        window.GUI.text("Sensing dist: average distance in world units at which agents\
-                         probe the deposit")
-        window.GUI.text("Sensing angle: angle in radians within which agents probe\
-                         deposit (left and right concentric to movement direction)")
-        window.GUI.text("Sampling expo: sampling sharpness \
-                        (or 'acuteness' or 'temperature') \
-                        which tunes the directional mutation behavior")
-        window.GUI.text("Step size: average size of the step in world units which\
-                         agents make in each iteration")
-        window.GUI.text("Data deposit: amount of marker 'deposit' that *data* emit at\
-                         every iteration")
-        window.GUI.text("Agent deposit: amount of marker 'deposit' that *agents* emit\
-                         at every iteration")
-        window.GUI.text("Deposit attn: attenuation (or 'decay') rate of the diffusing\
-                         combined agent+data deposit field")
-        window.GUI.text("Trace attn: attenuation (or 'decay') of the non-diffusing\
-                         agent trace field")
-        window.GUI.text("Deposit vis: visualization intensity of the green deposit\
-                         field (logarithmic)")
-        window.GUI.text("Trace vis: visualization intensity of the red trace field\
-                         (logarithmic)")
+        window.GUI.text("Sensing dist: average distance in world units at which agents probe the deposit")
+        window.GUI.text("Sensing angle: angle in radians within which agents probe deposit (left and right concentric to movement direction)")
+        window.GUI.text("Sampling expo: sampling sharpness (or 'acuteness' or 'temperature') which tunes the directional mutation behavior")
+        window.GUI.text("Step size: average size of the step in world units which agents make in each iteration")
+        window.GUI.text("Data deposit: amount of marker 'deposit' that *data* emit at every iteration")
+        window.GUI.text("Agent deposit: amount of marker 'deposit' that *agents* emit at every iteration")
+        window.GUI.text("Deposit attn: attenuation (or 'decay') rate of the diffusing combined agent+data deposit field")
+        window.GUI.text("Trace attn: attenuation (or 'decay') of the non-diffusing agent trace field")
+        window.GUI.text("Deposit vis: visualization intensity of the green deposit field (logarithmic)")
+        window.GUI.text("Trace vis: visualization intensity of the red trace field (logarithmic)")
         window.GUI.text("")
         window.GUI.text("OPTIONS")
-        window.GUI.text("Distance distribution: strategy for sampling the sensing and\
-                         movement distances")
-        window.GUI.text("Directional distribution: strategy for sampling the sensing\
-                         and movement directions")
-        window.GUI.text("Directional mutation: strategy for selecting the new movement\
-                         direction")
-        window.GUI.text("Deposit fetching: access behavior when sampling the deposit\
-                         field")
-        window.GUI.text("Agent boundary handling: what do agents do if they reach the\
-                         boundary of the simulation domain")
+        window.GUI.text("Distance distribution: strategy for sampling the sensing and movement distances")
+        window.GUI.text("Directional distribution: strategy for sampling the sensing and movement directions")
+        window.GUI.text("Directional mutation: strategy for selecting the new movement direction")
+        window.GUI.text("Deposit fetching: access behavior when sampling the deposit field")
+        window.GUI.text("Agent boundary handling: what do agents do if they reach the boundary of the simulation domain")
         window.GUI.text("")
         window.GUI.text("VISUALIZATION")
-        window.GUI.text("Renders 2 types of information superimposed on top of each\
-                         other: *green* deposit field and *red-purple* trace field.")
-        window.GUI.text("Yellow-white signifies areas where deposit and trace overlap\
-                         (relative intensities are controlled by the T/D vis params)")
+        window.GUI.text("Renders 2 types of information superimposed on top of each other: *green* deposit field and *red-purple* trace field.")
+        window.GUI.text("Yellow-white signifies areas where deposit and trace overlap (relative intensities are controlled by the T/D vis params)")
         window.GUI.text("Screenshots can be saved in the /capture folder.")
         window.GUI.text("")
         window.GUI.text("DATA")
-        window.GUI.text("Input data are loaded from the specified folder in /data.\
-                         Currently the CSV format is supported.")
-        window.GUI.text("Reconstruction data are exported to /data/fits using the\
-                         Export fit button.")
+        window.GUI.text("Input data are loaded from the specified folder in /data. Currently the CSV format is supported.")
+        window.GUI.text("Reconstruction data are exported to /data/fits using the Export fit button.")
         window.GUI.text("")
         window.GUI.text("EDITING")
-        window.GUI.text("New data points can be placed by mouse clicking.\
-                         This overrides old data on a Round-Robin basis.")
+        window.GUI.text("New data points can be placed by mouse clicking. This overrides old data on a Round-Robin basis.")
         window.GUI.text("Left mouse: discrete mode, place a single data point")
-        window.GUI.text("Right mouse: continuous mode,\
-                         place a data point at every iteration")
+        window.GUI.text("Right mouse: continuous mode, place a data point at every iteration")
         window.GUI.end()

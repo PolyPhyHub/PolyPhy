@@ -19,7 +19,6 @@ class PPConfig_2DDiscrete(PPConfig):
 
     def register_data(self, ppData):
         self.ppData = ppData
-        self.TRACE_RESOLUTION_MAX = 1440
         self.DATA_TO_AGENTS_RATIO = (
             PPTypes.FLOAT_CPU(ppData.N_DATA) /
             PPTypes.FLOAT_CPU(ppData.N_AGENTS)
@@ -56,8 +55,7 @@ class PPInputData_2DDiscrete(PPInputData):
     # TODO: load datasets from specified file + type
 
     def __load_from_file__(self):
-        Logger.logToStdOut("info", 'Loading input file... '
-                           + self.ROOT + self.input_file, self.DOMAIN_MIN)
+        Logger.logToStdOut("info", 'Loading input file... ' + self.ROOT + self.input_file)
         self.data = np.loadtxt(
             self.ROOT + self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
         self.N_DATA = self.data.shape[0]
@@ -89,7 +87,7 @@ class PPInputData_2DDiscrete(PPInputData):
         self.data[:, 1] = rng.normal(loc=self.DOMAIN_MIN[1] + 0.5 *
                                      self.DOMAIN_MAX[1], scale=0.13 *
                                      self.DOMAIN_SIZE[1], size=self.N_DATA)
-        self.data[:, 2] = np.mean(self.data[:, 2])
+        self.data[:, 2] = rng.normal(loc=self.AVG_WEIGHT, scale=0.5*self.AVG_WEIGHT, size=self.N_DATA)
 
 
 class PPInternalData_2DDiscrete(PPInternalData):

@@ -19,7 +19,6 @@ class PPConfig_3DDiscrete(PPConfig):
 
     def register_data(self, ppData):
         self.ppData = ppData
-        self.TRACE_RESOLUTION_MAX = 512
         self.DATA_TO_AGENTS_RATIO = PPTypes.FLOAT_CPU(
             ppData.N_DATA) / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
         self.DOMAIN_SIZE_MAX = np.max(
@@ -118,7 +117,7 @@ class PPInputData_3DDiscrete(PPInputData):
             loc=self.DOMAIN_MIN[2] + 0.5 * self.DOMAIN_MAX[2],
             scale=0.15 * self.DOMAIN_SIZE[2],
             size=self.N_DATA)
-        self.data[:, 3] = self.AVG_WEIGHT
+        self.data[:, 3] = rng.normal(loc=self.AVG_WEIGHT, scale=0.5 * self.AVG_WEIGHT, size=self.N_DATA)
 
 
 class PPInternalData_3DDiscrete(PPInternalData):
