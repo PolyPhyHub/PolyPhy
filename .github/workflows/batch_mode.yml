@@ -1,0 +1,41 @@
+name: Polyphy CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Create /tmp/flag file
+      run: echo "This is a flag file" > /tmp/flag
+
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install -r requirements.txt 
+
+    - name: Run polyphy.py for 2D_discrete
+      run: |
+        cd src/polyphy/ && python3 polyphy.py 2d_discrete -b -n 100 -f data/csv/sample_2D_linW.csv
+
+    - name: Run polyphy.py for 3D_discrete
+      run: |
+        cd src/polyphy/ && python3 polyphy.py 3d_discrete -b -n 100 -f data/csv/sample_3D_linW.csv
+
+    - name: Check if 4 files are created in data/fits
+      run: |
+        file_count=$(ls -1q data/fits/*.npy | wc -l)
+        if [ $file_count -eq 4 ]; then
+          echo "Success: 4 files found in data/fits"
+        else
+          echo "Error: Expected 4 files in data/fits, found $file_count"
+          exit 1
+        fi

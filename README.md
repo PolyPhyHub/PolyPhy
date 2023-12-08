@@ -23,9 +23,10 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 - Email list: [Google Groups](https://groups.google.com/g/polyphy-news)
 
 ## System Requirements
-- Decent GPU, recommended a mid-range discrete one
-  - currently running best on NVIDIA GPUs, other brands supported as well (subject to the current capabilities of the [Taichi API](https://github.com/taichi-dev/taichi))
+- Decent GPU, recommended a mid-range discrete NVIDIA/AMD device
+  - currently running best on NVIDIA GPUs, other vendors supported as well (subject to the current capabilities of the [Taichi API](https://github.com/taichi-dev/taichi))
   - CPU fallback available for debugging purposes
+- Corresponding GPU environment and drivers (e.g. Vulkan, Metal)
 - Recent Windows, Linux or Mac OS
 - Python 3.x, Anaconda recommended
 

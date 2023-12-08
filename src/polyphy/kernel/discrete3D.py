@@ -21,11 +21,10 @@ class PPKernels_3DDiscrete(PPKernels):
             grid_resolution) -> PPTypes.VEC3i:
         pos_relative = (pos_world - domain_min) / (domain_max - domain_min)
         grid_coord = ti.cast(
-            pos_relative * ti.cast(grid_resolution,
-                                   PPTypes.FLOAT_GPU), PPTypes.INT_GPU)
-        return ti.max(
-            PPTypes.VEC3i(0, 0, 0),
-            ti.min(grid_coord, grid_resolution - (1, 1, 1)))
+            pos_relative * ti.cast(
+                grid_resolution,
+                PPTypes.FLOAT_GPU), PPTypes.INT_GPU)
+        return ti.max(PPTypes.VEC3i(0, 0, 0), ti.min(grid_coord, grid_resolution - (1, 1, 1)))
 
     @ti.func
     def angles_to_dir_3D(self, theta, phi) -> PPTypes.VEC3f:
@@ -97,40 +96,37 @@ class PPKernels_3DDiscrete(PPKernels):
             # Generate sensing distance for the agent, constant or probabilistic
             agent_sensing_distance = sense_distance
             distance_scaling_factor = 1.0
-            if distance_sampling_distribution \
-                    == PPConfig.EnumDistanceSamplingDistribution.EXPONENTIAL:
+            if distance_sampling_distribution == PPConfig.EnumDistanceSamplingDistribution.EXPONENTIAL:
                 xi = timath.clamp(ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999)
                 # log & pow are unstable in extremes
                 distance_scaling_factor = -ti.log(xi)
-            elif distance_sampling_distribution \
-                    == PPConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN:
+            elif distance_sampling_distribution == PPConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN:
                 xi = timath.clamp(ti.random(dtype=PPTypes.FLOAT_GPU), 0.001, 0.999)
                 # log & pow are unstable in extremes
-                distance_scaling_factor = -0.3033 * ti.log(
-                    (ti.pow(xi + 0.005, -0.4) - 0.9974) / 7.326)
+                distance_scaling_factor = -0.3033 * ti.log((ti.pow(xi + 0.005, -0.4) - 0.9974) / 7.326)
             agent_sensing_distance *= distance_scaling_factor
 
             # Generate new mutated direction by perturbing the original
             # TODO implement the other sampling strategies
             dir_fwd = self.angles_to_dir_3D(theta, phi)
             xi_dir = 1.0
-            if directional_sampling_distribution \
-                    == PPConfig.EnumDirectionalSamplingDistribution.CONE:
+            if directional_sampling_distribution == PPConfig.EnumDirectionalSamplingDistribution.CONE:
                 xi_dir = ti.random(dtype=PPTypes.FLOAT_GPU)
             theta_sense = theta - xi_dir * sense_angle
             off_fwd_dir = self.angles_to_dir_3D(theta_sense, phi)
-            random_azimuth = ti.random(
-                dtype=PPTypes.FLOAT_GPU) * 2.0 * timath.pi - timath.pi
+            random_azimuth = ti.random(dtype=PPTypes.FLOAT_GPU) * 2.0 * timath.pi - timath.pi
             dir_mut = self.axial_rotate_3D(off_fwd_dir, dir_fwd, random_azimuth)
 
             # Fetch deposit to guide the agent
             # TODO implement the other mutation strategies
             deposit_fwd = deposit_field[self.world_to_grid_3D(
-                pos + agent_sensing_distance * dir_fwd, PPTypes.VEC3f(DOMAIN_MIN),
+                pos + agent_sensing_distance * dir_fwd,
+                PPTypes.VEC3f(DOMAIN_MIN),
                 PPTypes.VEC3f(DOMAIN_MAX),
                 PPTypes.VEC3i(DEPOSIT_RESOLUTION))][current_deposit_index]
             deposit_mut = deposit_field[self.world_to_grid_3D(
-                pos + agent_sensing_distance * dir_mut, PPTypes.VEC3f(DOMAIN_MIN),
+                pos + agent_sensing_distance * dir_mut,
+                PPTypes.VEC3f(DOMAIN_MIN),
                 PPTypes.VEC3f(DOMAIN_MAX),
                 PPTypes.VEC3i(DEPOSIT_RESOLUTION))][current_deposit_index]
 
@@ -160,8 +156,7 @@ class PPKernels_3DDiscrete(PPKernels):
                 pos_new[2] = self.custom_mod(
                     pos_new[2] - DOMAIN_MIN[2] + DOMAIN_SIZE[2],
                     DOMAIN_SIZE[2]) + DOMAIN_MIN[2]
-            elif agent_boundary_handling \
-                    == PPConfig.EnumAgentBoundaryHandling.REINIT_CENTER:
+            elif agent_boundary_handling == PPConfig.EnumAgentBoundaryHandling.REINIT_CENTER:
                 if pos_new[0] <= DOMAIN_MIN[0] \
                     or pos_new[0] >= DOMAIN_MAX[0] \
                     or pos_new[1] <= DOMAIN_MIN[1] \
@@ -171,8 +166,7 @@ class PPKernels_3DDiscrete(PPKernels):
                     pos_new[0] = 0.5 * (DOMAIN_MIN[0] + DOMAIN_MAX[0])
                     pos_new[1] = 0.5 * (DOMAIN_MIN[1] + DOMAIN_MAX[1])
                     pos_new[2] = 0.5 * (DOMAIN_MIN[2] + DOMAIN_MAX[2])
-            elif agent_boundary_handling \
-                    == PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
+            elif agent_boundary_handling == PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY:
                 if pos_new[0] <= DOMAIN_MIN[0] \
                     or pos_new[0] >= DOMAIN_MAX[0] \
                     or pos_new[1] <= DOMAIN_MIN[1] \
@@ -288,17 +282,8 @@ class PPKernels_3DDiscrete(PPKernels):
 
         for x, y in ti.ndrange(VIS_RESOLUTION[0], VIS_RESOLUTION[1]):
             # Compute x and y ray directions in neutral camera position
-            rx = DOMAIN_SIZE_MAX * (
-                ti.cast(
-                    x,
-                    PPTypes.FLOAT_GPU) / ti.cast(
-                        VIS_RESOLUTION[0],
-                        PPTypes.FLOAT_GPU)) - 0.5 * DOMAIN_SIZE_MAX
-            ry = DOMAIN_SIZE_MAX * (ti.cast(
-                y,
-                PPTypes.FLOAT_GPU) / ti.cast(
-                    VIS_RESOLUTION[1],
-                    PPTypes.FLOAT_GPU)) - 0.5 * DOMAIN_SIZE_MAX
+            rx = DOMAIN_SIZE_MAX * (ti.cast(x, PPTypes.FLOAT_GPU) / ti.cast(VIS_RESOLUTION[0], PPTypes.FLOAT_GPU)) - 0.5 * DOMAIN_SIZE_MAX
+            ry = DOMAIN_SIZE_MAX * (ti.cast(y, PPTypes.FLOAT_GPU) / ti.cast(VIS_RESOLUTION[1], PPTypes.FLOAT_GPU)) - 0.5 * DOMAIN_SIZE_MAX
             ry /= aspect_ratio
 
             # Initialize ray origin and direction
@@ -338,9 +323,7 @@ class PPKernels_3DDiscrete(PPKernels):
                     ray_L += PPTypes.VEC3f(
                         trace_vis * trace_val,
                         deposit_vis * deposit_val,
-                        ti.pow(
-                            ti.log(1.0 + 0.2 * trace_vis * trace_val),
-                            3.0)) / n_ray_steps_f
+                        ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)) / n_ray_steps_f
                     ray_pos += ray_delta * ray_dir
                     t_current += ray_delta
 

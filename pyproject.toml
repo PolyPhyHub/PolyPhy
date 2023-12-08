@@ -1,5 +1,5 @@
 [project]
-name = "polyphy"
+name = "PolyPhyPy"
 version = "0.0.1"
 description = "description for polyphy"
 readme = "README.md"
