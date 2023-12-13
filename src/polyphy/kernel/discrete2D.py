@@ -175,39 +175,3 @@ class PPKernels_2DDiscrete(PPKernels):
                         N_AGENTS,
                         PPTypes.FLOAT_GPU)) * weight
         return
-
-    @ti.kernel
-    def deposit_relaxation_step_2D_discrete(self,
-                                            attenuation: PPTypes.FLOAT_GPU,
-                                            current_deposit_index: PPTypes.INT_GPU,
-                                            DEPOSIT_RESOLUTION: PPTypes.VEC2i,
-                                            deposit_field: ti.template()):
-        DIFFUSION_WEIGHTS = [1.0, 1.0, 0.707]
-        DIFFUSION_WEIGHTS_NORM = (DIFFUSION_WEIGHTS[0] + 4.0 * DIFFUSION_WEIGHTS[1] + 4.0 * DIFFUSION_WEIGHTS[2])
-        for cell in ti.grouped(deposit_field):
-            # The "beautiful" expression below implements
-            # a 3x3 kernel diffusion with manually wrapped addressing
-            # Taichi doesn't support modulo for tuples
-            # so each dimension is handled separately
-            value = DIFFUSION_WEIGHTS[0] * deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 0 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                  + DIFFUSION_WEIGHTS[1] * deposit_field[((cell[0] + 0 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                  + DIFFUSION_WEIGHTS[2] * deposit_field[((cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                  + DIFFUSION_WEIGHTS[2] * deposit_field[((cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                  + DIFFUSION_WEIGHTS[2] * deposit_field[((cell[0] + 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] - 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]\
-                  + DIFFUSION_WEIGHTS[2] * deposit_field[((cell[0] - 1 + DEPOSIT_RESOLUTION[0]) % DEPOSIT_RESOLUTION[0], (cell[1] + 1 + DEPOSIT_RESOLUTION[1]) % DEPOSIT_RESOLUTION[1])][current_deposit_index]
-            deposit_field[cell][1 - current_deposit_index] = (attenuation * value / DIFFUSION_WEIGHTS_NORM)
-        return
-
-    @ti.kernel
-    def trace_relaxation_step_2D_discrete(
-        self,
-        attenuation: PPTypes.FLOAT_GPU,
-            trace_field: ti.template()):
-        for cell in ti.grouped(trace_field):
-            # Perturb the attenuation by a small factor
-            # to avoid accumulating quantization errors
-            trace_field[cell][0] *= (attenuation - 0.001 + 0.002 * ti.random(dtype=PPTypes.FLOAT_GPU))
-        return

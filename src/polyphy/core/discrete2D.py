@@ -242,12 +242,12 @@ class PPSimulation_2DDiscrete(PPSimulation):
                         ppInternalData.agents_field,
                         ppInternalData.trace_field,
                         ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.deposit_relaxation_step_2D_discrete(
+                    ppInternalData.ppKernels.deposit_relaxation_step_2D(
                         ppConfig.deposit_attenuation,
                         self.current_deposit_index,
                         ppConfig.DEPOSIT_RESOLUTION,
                         ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.trace_relaxation_step_2D_discrete(
+                    ppInternalData.ppKernels.trace_relaxation_step_2D(
                         ppConfig.trace_attenuation,
                         ppInternalData.trace_field)
                     self.current_deposit_index = 1 - self.current_deposit_index
