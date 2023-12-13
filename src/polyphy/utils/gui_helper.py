@@ -21,13 +21,13 @@ class GuiHelper:
         ppConfig.sense_distance = window.GUI.slider_float(
             'Sensing dist', ppConfig.sense_distance,
             0.1, 0.05 * ppConfig.DOMAIN_SIZE_MAX)
+        ppConfig.step_size = window.GUI.slider_float(
+            'Step size', ppConfig.step_size,
+            0.0, 0.005 * ppConfig.DOMAIN_SIZE_MAX)
         ppConfig.sense_angle = window.GUI.slider_float(
             'Sensing angle', ppConfig.sense_angle, 0.01, 0.5 * np.pi)
         ppConfig.sampling_exponent = window.GUI.slider_float(
             'Sampling expo', ppConfig.sampling_exponent, 0.1, 5.0)
-        ppConfig.step_size = window.GUI.slider_float(
-            'Step size', ppConfig.step_size,
-            0.0, 0.005 * ppConfig.DOMAIN_SIZE_MAX)
         ppConfig.data_deposit = window.GUI.slider_float(
             'Data deposit', ppConfig.data_deposit, 0.0, ppConfig.MAX_DEPOSIT)
         ppConfig.agent_deposit = window.GUI.slider_float(
@@ -49,15 +49,15 @@ class GuiHelper:
             ppConfig.distance_sampling_distribution = \
                 ppConfig.EnumDistanceSamplingDistribution.CONSTANT
         if window.GUI.checkbox(
-            "Exponential", ppConfig.distance_sampling_distribution
-                == ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL):
-            ppConfig.distance_sampling_distribution = \
-                ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL
-        if window.GUI.checkbox(
             "Maxwell-Boltzmann", ppConfig.distance_sampling_distribution
                 == ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN):
             ppConfig.distance_sampling_distribution = \
                 ppConfig.EnumDistanceSamplingDistribution.MAXWELL_BOLTZMANN
+        if window.GUI.checkbox(
+            "Exponential", ppConfig.distance_sampling_distribution
+                == ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL):
+            ppConfig.distance_sampling_distribution = \
+                ppConfig.EnumDistanceSamplingDistribution.EXPONENTIAL
         window.GUI.text("Directional distribution:")
         if window.GUI.checkbox(
             "Discrete", ppConfig.directional_sampling_distribution

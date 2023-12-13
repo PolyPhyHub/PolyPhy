@@ -7,8 +7,10 @@ import argparse
 
 from core.common import PPConfig
 from core.discrete2D import PPConfig_2DDiscrete
+from core.continuous2D import PPConfig_2DContinuous
 from core.discrete3D import PPConfig_3DDiscrete
 from pipelines.discrete2D import PolyPhy_2DDiscrete
+from pipelines.continuous2D import PolyPhy_2DContinuous
 from pipelines.discrete3D import PolyPhy_3DDiscrete
 
 

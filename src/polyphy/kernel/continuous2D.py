@@ -11,31 +11,29 @@ from .common import PPKernels
 
 
 @ti.data_oriented
-class PPKernels_2DDiscrete(PPKernels):
+class PPKernels_2DContinuous(PPKernels):
     
     @ti.kernel
-    def data_step_2D_discrete(
+    def data_step_2D_continuous(
                 self,
                 data_deposit: PPTypes.FLOAT_GPU,
                 current_deposit_index: PPTypes.INT_GPU,
                 DOMAIN_MIN: PPTypes.VEC2f,
                 DOMAIN_MAX: PPTypes.VEC2f,
+                DOMAIN_SIZE: PPTypes.VEC2f,
+                DATA_RESOLUTION: PPTypes.VEC2i,
                 DEPOSIT_RESOLUTION: PPTypes.VEC2i,
                 data_field: ti.template(),
                 deposit_field: ti.template()):
-        for point in ti.ndrange(data_field.shape[0]):
+        for cell in ti.grouped(deposit_field):
             pos = PPTypes.VEC2f(0.0, 0.0)
-            pos[0], pos[1], weight = data_field[point]
-            deposit_cell = self.world_to_grid_2D(
-                pos,
-                PPTypes.VEC2f(DOMAIN_MIN),
-                PPTypes.VEC2f(DOMAIN_MAX),
-                PPTypes.VEC2i(DEPOSIT_RESOLUTION))
-            deposit_field[deposit_cell][current_deposit_index] += data_deposit * weight
+            pos = PPTypes.VEC2f(DOMAIN_SIZE) * ti.cast(cell, PPTypes.FLOAT_GPU) / PPTypes.VEC2f(DEPOSIT_RESOLUTION)
+            data_val = data_field[self.world_to_grid_2D(pos, PPTypes.VEC2f(DOMAIN_MIN), PPTypes.VEC2f(DOMAIN_MAX), PPTypes.VEC2i(DATA_RESOLUTION))][0]
+            deposit_field[cell][current_deposit_index] += data_deposit * data_val
         return
 
     @ti.kernel
-    def agent_step_2D_discrete(
+    def agent_step_2D_continuous(
                 self,
                 sense_distance: PPTypes.FLOAT_GPU,
                 sense_angle: PPTypes.FLOAT_GPU,
@@ -177,7 +175,7 @@ class PPKernels_2DDiscrete(PPKernels):
         return
 
     @ti.kernel
-    def deposit_relaxation_step_2D_discrete(self,
+    def deposit_relaxation_step_2D_continuous(self,
                                             attenuation: PPTypes.FLOAT_GPU,
                                             current_deposit_index: PPTypes.INT_GPU,
                                             DEPOSIT_RESOLUTION: PPTypes.VEC2i,
@@ -202,7 +200,7 @@ class PPKernels_2DDiscrete(PPKernels):
         return
 
     @ti.kernel
-    def trace_relaxation_step_2D_discrete(
+    def trace_relaxation_step_2D_continuous(
         self,
         attenuation: PPTypes.FLOAT_GPU,
             trace_field: ti.template()):

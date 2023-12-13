@@ -128,20 +128,6 @@ class PPInternalData_3DDiscrete(PPInternalData):
         ppKernels.zero_field(self.trace_field)
         ppKernels.zero_field(self.vis_field)
 
-    # Store current deposit and trace fields
-    def store_fit(self):
-        if not os.path.exists(self.ppConfig.ppData.ROOT + "data/fits/"):
-            os.makedirs(self.ppConfig.ppData.ROOT + "data/fits/")
-        current_stamp = Logger.stamp()
-        Logger.logToStdOut("info", 'Storing solution data in data/fits/')
-        deposit = self.deposit_field.to_numpy()
-        np.save(
-            self.ppConfig.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
-        trace = self.trace_field.to_numpy()
-        np.save(
-            self.ppConfig.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
-        return current_stamp, deposit, trace
-
     def __init__(self, rng, ppKernels, ppConfig):
         self.agents = np.zeros(
             shape=(ppConfig.ppData.N_AGENTS, 6),

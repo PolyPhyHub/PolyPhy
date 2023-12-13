@@ -12,17 +12,15 @@ from .common import PPSimulation, PPPostSimulation
 from utils.gui_helper import GuiHelper
 from utils.logger import Logger
 
+from PIL import Image
 
-class PPConfig_2DDiscrete(PPConfig):
+class PPConfig_2DContinuous(PPConfig):
     def __init__(self):
         super()
 
     def register_data(self, ppData):
         self.ppData = ppData
-        self.DATA_TO_AGENTS_RATIO = (
-            PPTypes.FLOAT_CPU(ppData.N_DATA) /
-            PPTypes.FLOAT_CPU(ppData.N_AGENTS)
-        )
+        self.DATA_TO_AGENTS_RATIO =  1.0e4 / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]])
         self.TRACE_RESOLUTION = PPTypes.INT_CPU(
             (PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] /
@@ -51,46 +49,34 @@ class PPConfig_2DDiscrete(PPConfig):
         Logger.logToStdOut('info', 'Deposit grid resolution:', self.DEPOSIT_RESOLUTION)
 
 
-class PPInputData_2DDiscrete(PPInputData):
+class PPInputData_2DContinuous(PPInputData):
     # TODO: load datasets from specified file + type
 
     def __load_from_file__(self):
         Logger.logToStdOut("info", 'Loading input file... ' + self.ROOT + self.input_file)
-        self.data = np.loadtxt(
-            self.ROOT + self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
-        self.N_DATA = self.data.shape[0]
+        self.data = ti.tools.image.imread(self.ROOT + self.input_file).astype(PPTypes.FLOAT_CPU) / 255.0
+        self.DATA_RESOLUTION = self.data.shape[0:2]
         self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
-        self.domain_min = (np.min(self.data[:, 0]), np.min(self.data[:, 1]))
-        self.domain_max = (np.max(self.data[:, 0]), np.max(self.data[:, 1]))
-        self.domain_size = np.subtract(self.domain_max, self.domain_min)
-        self.DOMAIN_MIN = (self.domain_min[0] - PPConfig.DOMAIN_MARGIN *
-                           self.domain_size[0], self.domain_min[1] -
-                           PPConfig.DOMAIN_MARGIN * self.domain_size[1])
-        self.DOMAIN_MAX = (self.domain_max[0] + PPConfig.DOMAIN_MARGIN *
-                           self.domain_size[0], self.domain_max[1] +
-                           PPConfig.DOMAIN_MARGIN * self.domain_size[1])
-        self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
-        self.AVG_WEIGHT = np.mean(self.data[:, 2])
+        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT \
+                            * PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[1]) / PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[0]))
+        self.DOMAIN_MIN = (0.0, 0.0)
+        self.DOMAIN_MAX = self.DOMAIN_SIZE
+        self.AVG_WEIGHT = 1.0
 
     def __generate_test_data__(self, rng):
         Logger.logToStdOut("info", 'Generating synthetic testing dataset...')
-        self.AVG_WEIGHT = 10.0
-        self.N_DATA = PPConfig.N_DATA_DEFAULT
+        self.data = np.ones(shape=(PPConfig.TRACE_RESOLUTION_MAX, PPConfig.TRACE_RESOLUTION_MAX, 1), dtype=PPTypes.FLOAT_CPU)
+        self.data = rng.uniform(low=0.0, high=2.0, size=self.data.shape).astype(dtype=PPTypes.FLOAT_CPU)
+        self.DATA_RESOLUTION = (PPConfig.TRACE_RESOLUTION_MAX, PPConfig.TRACE_RESOLUTION_MAX)
         self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
-        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
+        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT \
+                            * PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[1]) / PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[0]))
         self.DOMAIN_MIN = (0.0, 0.0)
-        self.DOMAIN_MAX = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT)
-        self.data = np.zeros(shape=(self.N_DATA, 3), dtype=PPTypes.FLOAT_CPU)
-        self.data[:, 0] = rng.normal(loc=self.DOMAIN_MIN[0] + 0.5 *
-                                     self.DOMAIN_MAX[0], scale=0.13 *
-                                     self.DOMAIN_SIZE[0], size=self.N_DATA)
-        self.data[:, 1] = rng.normal(loc=self.DOMAIN_MIN[1] + 0.5 *
-                                     self.DOMAIN_MAX[1], scale=0.13 *
-                                     self.DOMAIN_SIZE[1], size=self.N_DATA)
-        self.data[:, 2] = rng.normal(loc=self.AVG_WEIGHT, scale=0.5*self.AVG_WEIGHT, size=self.N_DATA)
+        self.DOMAIN_MAX = self.DOMAIN_SIZE
+        self.AVG_WEIGHT = 1.0
 
 
-class PPInternalData_2DDiscrete(PPInternalData):
+class PPInternalData_2DContinuous(PPInternalData):
     def __init_internal_data__(self, ppKernels):
         # Initialize GPU fields
         self.data_field.from_numpy(self.ppConfig.ppData.data)
@@ -99,20 +85,9 @@ class PPInternalData_2DDiscrete(PPInternalData):
         ppKernels.zero_field(self.trace_field)
         ppKernels.zero_field(self.vis_field)
 
-    # Insert a new data point, Round-Robin style, and upload to GPU
-    # This can be very costly for many data points! (eg 10^5 or more)
-    def edit_data(self, edit_index: PPTypes.INT_CPU,
-                  window: ti.ui.Window) -> PPTypes.INT_CPU:
-        mouse_rel_pos = (np.min([np.max([0.001, window.get_cursor_pos()[0]]), 0.999]),
-                         np.min([np.max([0.001, window.get_cursor_pos()[1]]), 0.999]))
-        mouse_pos = np.add(self.ppConfig.ppData.DOMAIN_MIN,
-                           np.multiply(mouse_rel_pos, self.ppConfig.ppData.DOMAIN_SIZE))
-        self.ppConfig.ppData.data[edit_index, :] = (
-            mouse_pos[0], mouse_pos[1], self.ppConfig.ppData.AVG_WEIGHT
-        )
-        self.data_field.from_numpy(self.ppConfig.ppData.data)
-        edit_index = (edit_index + 1) % self.ppConfig.ppData.N_DATA
-        return edit_index
+    # TODO implement meaningful editing using 2D discrete pipeline as template
+    def edit_data(self, edit_index: PPTypes.INT_CPU, window: ti.ui.Window) -> PPTypes.INT_CPU:
+        return 0
 
     def __init__(self, rng, ppKernels, ppConfig):
         self.agents = np.zeros(
@@ -128,8 +103,8 @@ class PPInternalData_2DDiscrete(PPInternalData):
         self.agents[:, 3] = 1.0
         Logger.logToStdOut("info", 'Agent sample:', self.agents[0, :])
 
-        self.data_field = ti.Vector.field(n=3, dtype=PPTypes.FLOAT_GPU,
-                                          shape=ppConfig.ppData.N_DATA)
+        self.data_field = ti.Vector.field(n=1, dtype=PPTypes.FLOAT_GPU,
+                                          shape=ppConfig.ppData.DATA_RESOLUTION)
         self.agents_field = ti.Vector.field(n=4, dtype=PPTypes.FLOAT_GPU,
                                             shape=ppConfig.ppData.N_AGENTS)
         self.deposit_field = ti.Vector.field(n=2, dtype=PPTypes.FLOAT_GPU,
@@ -139,7 +114,7 @@ class PPInternalData_2DDiscrete(PPInternalData):
         self.vis_field = ti.Vector.field(n=3, dtype=PPTypes.FLOAT_GPU,
                                          shape=ppConfig.VIS_RESOLUTION)
         Logger.logToStdOut("info", 'Total GPU memory allocated:',
-                           PPTypes.INT_CPU(4 * (self.data_field.shape[0] * 3 +
+                           PPTypes.INT_CPU(4 * (self.data_field.shape[0] * self.data_field.shape[1] +
                                                 self.agents_field.shape[0] * 4 +
                                                 self.deposit_field.shape[0] *
                                                 self.deposit_field.shape[1] * 2 +
@@ -154,7 +129,7 @@ class PPInternalData_2DDiscrete(PPInternalData):
         self.__init_internal_data__(ppKernels)
 
 
-class PPSimulation_2DDiscrete(PPSimulation):
+class PPSimulation_2DContinuous(PPSimulation):
     def __drawGUI__(self, window, ppConfig):
         GuiHelper.draw(self, window, ppConfig)
 
@@ -211,15 +186,17 @@ class PPSimulation_2DDiscrete(PPSimulation):
 
                 # Main simulation sequence
                 if self.do_simulate:
-                    ppInternalData.ppKernels.data_step_2D_discrete(
+                    ppInternalData.ppKernels.data_step_2D_continuous(
                         ppConfig.data_deposit,
                         self.current_deposit_index,
                         ppConfig.ppData.DOMAIN_MIN,
                         ppConfig.ppData.DOMAIN_MAX,
+                        ppConfig.ppData.DOMAIN_SIZE,
+                        ppConfig.ppData.DATA_RESOLUTION,
                         ppConfig.DEPOSIT_RESOLUTION,
                         ppInternalData.data_field,
                         ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.agent_step_2D_discrete(
+                    ppInternalData.ppKernels.agent_step_2D_continuous(
                         ppConfig.sense_distance,
                         ppConfig.sense_angle,
                         ppConfig.steering_rate,
@@ -232,7 +209,7 @@ class PPSimulation_2DDiscrete(PPSimulation):
                         ppConfig.directional_mutation_type,
                         ppConfig.deposit_fetching_strategy,
                         ppConfig.agent_boundary_handling,
-                        ppConfig.ppData.N_DATA,
+                        10000,
                         ppConfig.ppData.N_AGENTS,
                         ppConfig.ppData.DOMAIN_SIZE,
                         ppConfig.ppData.DOMAIN_MIN,
@@ -242,12 +219,12 @@ class PPSimulation_2DDiscrete(PPSimulation):
                         ppInternalData.agents_field,
                         ppInternalData.trace_field,
                         ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.deposit_relaxation_step_2D_discrete(
+                    ppInternalData.ppKernels.deposit_relaxation_step_2D_continuous(
                         ppConfig.deposit_attenuation,
                         self.current_deposit_index,
                         ppConfig.DEPOSIT_RESOLUTION,
                         ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.trace_relaxation_step_2D_discrete(
+                    ppInternalData.ppKernels.trace_relaxation_step_2D_continuous(
                         ppConfig.trace_attenuation,
                         ppInternalData.trace_field)
                     self.current_deposit_index = 1 - self.current_deposit_index
@@ -283,7 +260,7 @@ class PPSimulation_2DDiscrete(PPSimulation):
                 window.destroy()
 
 
-class PPPostSimulation_2DDiscrete(PPPostSimulation):
+class PPPostSimulation_2DContinuous(PPPostSimulation):
     def __init__(self, ppInternalData):
         super().__init__(ppInternalData)
         ppInternalData.store_fit()

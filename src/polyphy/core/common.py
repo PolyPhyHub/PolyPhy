@@ -3,6 +3,7 @@
 # Author: Oskar Elek
 # Maintainers:
 
+import os
 from enum import IntEnum
 import numpy as np
 from numpy.random import default_rng
@@ -146,7 +147,7 @@ class PPInputData:
         Logger.logToStdOut("info", 'Simulation domain min:', self.DOMAIN_MIN)
         Logger.logToStdOut("info", 'Simulation domain max:', self.DOMAIN_MAX)
         Logger.logToStdOut("info", 'Simulation domain size:', self.DOMAIN_SIZE)
-        Logger.logToStdOut("info", 'Data sample:', self.data[0, :])
+        # Logger.logToStdOut("info", 'Data sample:', self.data[0, :])
         Logger.logToStdOut("info", 'Number of agents:', self.N_AGENTS)
         Logger.logToStdOut("info", 'Number of data points:', self.N_DATA)
 
@@ -176,7 +177,17 @@ class PPInternalData:
         pass
 
     def store_fit(self):
-        pass
+        if not os.path.exists(self.ppConfig.ppData.ROOT + "data/fits/"):
+            os.makedirs(self.ppConfig.ppData.ROOT + "data/fits/")
+        current_stamp = Logger.stamp()
+        Logger.logToStdOut("info", 'Storing solution data in data/fits/')
+        deposit = self.deposit_field.to_numpy()
+        np.save(self.ppConfig.ppData.ROOT + 'data/fits/deposit_' +
+                current_stamp + '.npy', deposit)
+        trace = self.trace_field.to_numpy()
+        np.save(self.ppConfig.ppData.ROOT + 'data/fits/trace_' +
+                current_stamp + '.npy', trace)
+        return current_stamp, deposit, trace
 
     def __init__(self, rng, kernels, ppConfig):
         pass

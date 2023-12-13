@@ -4,7 +4,7 @@
 # Maintainers:
 
 import taichi as ti
-
+import taichi.math as timath
 from core.common import PPTypes
 
 
@@ -15,6 +15,22 @@ class PPKernels:
     @ti.func
     def custom_mod(self, a, b) -> PPTypes.FLOAT_GPU:
         return a - b * ti.floor(a / b)
+    
+    @ti.func
+    def angle_to_dir_2D(self, angle) -> PPTypes.VEC2f:
+        return timath.normalize(PPTypes.VEC2f(ti.cos(angle), ti.sin(angle)))
+    
+    @ti.func
+    def world_to_grid_2D(
+            self,
+            pos_world,
+            domain_min,
+            domain_max,
+            grid_resolution) -> PPTypes.VEC2i:
+        pos_relative = (pos_world - domain_min) / (domain_max - domain_min)
+        grid_coord = ti.cast(pos_relative * ti.cast(
+            grid_resolution, PPTypes.FLOAT_GPU), PPTypes.INT_GPU)
+        return ti.max(PPTypes.VEC2i(0, 0), ti.min(grid_coord, grid_resolution - (1, 1)))
 
     @ti.func
     def ray_AABB_intersection(self, ray_pos, ray_dir, AABB_min, AABB_max):
@@ -39,4 +55,30 @@ class PPKernels:
     def copy_field(self, dst: ti.template(), src: ti.template()):
         for cell in ti.grouped(dst):
             dst[cell] = src[cell]
+        return
+    
+    @ti.kernel
+    def render_visualization_2D(
+                self,
+                trace_vis: PPTypes.FLOAT_GPU,
+                deposit_vis: PPTypes.FLOAT_GPU,
+                current_deposit_index: PPTypes.INT_GPU,
+                TRACE_RESOLUTION: PPTypes.VEC2i,
+                DEPOSIT_RESOLUTION: PPTypes.VEC2i,
+                VIS_RESOLUTION: PPTypes.VEC2i,
+                trace_field: ti.template(),
+                deposit_field: ti.template(),
+                vis_field: ti.template()):
+        for x, y in ti.ndrange(vis_field.shape[0], vis_field.shape[1]):
+            deposit_val = deposit_field[
+                x * DEPOSIT_RESOLUTION[0] // VIS_RESOLUTION[0],
+                y * DEPOSIT_RESOLUTION[1] // VIS_RESOLUTION[1]][current_deposit_index]
+            trace_val = trace_field[
+                x * TRACE_RESOLUTION[0] // VIS_RESOLUTION[0],
+                y * TRACE_RESOLUTION[1] // VIS_RESOLUTION[1]]
+            vis_field[x, y] = ti.pow(
+                PPTypes.VEC3f(
+                    trace_vis * trace_val,
+                    deposit_vis * deposit_val,
+                    ti.pow(ti.log(1.0 + 0.2 * trace_vis * trace_val), 3.0)), 1.0/2.2)
         return
