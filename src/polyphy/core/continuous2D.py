@@ -196,7 +196,7 @@ class PPSimulation_2DContinuous(PPSimulation):
                         ppConfig.DEPOSIT_RESOLUTION,
                         ppInternalData.data_field,
                         ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.agent_step_2D_continuous(
+                    ppInternalData.ppKernels.agent_step_2D(
                         ppConfig.sense_distance,
                         ppConfig.sense_angle,
                         ppConfig.steering_rate,

@@ -219,7 +219,7 @@ class PPSimulation_2DDiscrete(PPSimulation):
                         ppConfig.DEPOSIT_RESOLUTION,
                         ppInternalData.data_field,
                         ppInternalData.deposit_field)
-                    ppInternalData.ppKernels.agent_step_2D_discrete(
+                    ppInternalData.ppKernels.agent_step_2D(
                         ppConfig.sense_distance,
                         ppConfig.sense_angle,
                         ppConfig.steering_rate,
