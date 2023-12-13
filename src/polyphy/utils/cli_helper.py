@@ -19,8 +19,8 @@ class CliHelper:
         parser.add_argument(
             "pipeline",
             type=str,
-            choices=['2d_discrete', '3d_discrete'],
-            help="Run one of the pipelines")
+            choices=['2d_discrete', '2d_continuous', '3d_discrete'],
+            help="Run one of the data pipelines")
         parser.add_argument(
             '-f',
             '--input-file',
@@ -137,6 +137,8 @@ class CliHelper:
         args = CliHelper.args
         if args.pipeline == "2d_discrete":
             ppConfig = PPConfig_2DDiscrete()
+        elif args.pipeline == "2d_continuous":
+            ppConfig = PPConfig_2DContinuous()
         elif args.pipeline == "3d_discrete":
             ppConfig = PPConfig_3DDiscrete()
         if args.input_file:
@@ -220,5 +222,7 @@ class CliHelper:
                                 PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY)
         if args.pipeline == "2d_discrete":
             PolyPhy_2DDiscrete(ppConfig).start_simulation()
+        elif args.pipeline == "2d_continuous":
+            PolyPhy_2DContinuous(ppConfig).start_simulation()
         elif args.pipeline == "3d_discrete":
             PolyPhy_3DDiscrete(ppConfig).start_simulation()

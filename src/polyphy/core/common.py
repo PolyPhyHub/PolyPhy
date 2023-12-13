@@ -87,7 +87,7 @@ class PPConfig:
     MAX_DEPOSIT = 10.0
     DOMAIN_MARGIN = 0.05
     RAY_EPSILON = 1.0e-3
-    VIS_RESOLUTION = (1440, 900)
+    VIS_RESOLUTION = (1280, 720)
 
     # Input files
     input_file = ''
