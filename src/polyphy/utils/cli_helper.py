@@ -155,7 +155,7 @@ class CliHelper:
             else:
                 raise AssertionError("Please set number of iterations for batch mode using -n <int>")
         if args.num_iterations and not args.batch_mode:
-            raise AssertionError("Please set to batch mode")
+            raise AssertionError("Please set to batch mode using -b argument")
         if args.window_res_x and args.window_res_y:
             ppConfig.setter("VIS_RESOLUTION", (args.window_res_x, args.window_res_y))
         if args.trace_res_max:
@@ -223,8 +223,8 @@ class CliHelper:
                 ppConfig.setter("agent_boundary_handling",
                                 PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY)
         if args.pipeline == "2d_discrete":
-            PolyPhy_2DDiscrete(ppConfig).start_simulation()
+            PolyPhy_2DDiscrete(ppConfig, args.batch_mode, args.num_iterations).start_simulation()
         elif args.pipeline == "2d_continuous":
-            PolyPhy_2DContinuous(ppConfig).start_simulation()
+            PolyPhy_2DContinuous(ppConfig, args.batch_mode, args.num_iterations).start_simulation()
         elif args.pipeline == "3d_discrete":
-            PolyPhy_3DDiscrete(ppConfig).start_simulation()
+            PolyPhy_3DDiscrete(ppConfig, args.batch_mode, args.num_iterations).start_simulation()

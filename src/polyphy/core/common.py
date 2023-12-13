@@ -182,11 +182,9 @@ class PPInternalData:
         current_stamp = Logger.stamp()
         Logger.logToStdOut("info", 'Storing solution data in data/fits/')
         deposit = self.deposit_field.to_numpy()
-        np.save(self.ppConfig.ppData.ROOT + 'data/fits/deposit_' +
-                current_stamp + '.npy', deposit)
+        np.save(self.ppConfig.ppData.ROOT + 'data/fits/deposit_' + current_stamp + '.npy', deposit)
         trace = self.trace_field.to_numpy()
-        np.save(self.ppConfig.ppData.ROOT + 'data/fits/trace_' +
-                current_stamp + '.npy', trace)
+        np.save(self.ppConfig.ppData.ROOT + 'data/fits/trace_' + current_stamp + '.npy', trace)
         return current_stamp, deposit, trace
 
     def __init__(self, rng, kernels, ppConfig):
@@ -194,9 +192,7 @@ class PPInternalData:
 
 
 class PPSimulation:
-    def __drawGUI__(self,
-                    window,
-                    ppConfig):
+    def __drawGUI__(self, window, ppConfig):
         pass
 
     def __init__(self, ppInternalData, ppConfig, batch_mode, num_iterations):

@@ -13,9 +13,9 @@ from .common import PolyPhy
 
 
 class PolyPhy_2DDiscrete(PolyPhy):
-    def __init__(self, ppConfig):
-        self.batch_mode = False
-        self.num_iterations = -1
+    def __init__(self, ppConfig, batch_mode, num_iterations):
+        self.batch_mode = batch_mode
+        self.num_iterations = num_iterations
         self.ppConfig = ppConfig
         self.rng = default_rng()
         self.ppInputData = PPInputData_2DDiscrete(self.ppConfig.input_file, self.rng)
