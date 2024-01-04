@@ -14,7 +14,7 @@ maintainers = [
 ]
 dynamic = ["urls"]
 
-[project.urls]
+[urls]
 Documentation = "https://github.com/PolyPhyHub/PolyPhy"
 Source = "https://github.com/PolyPhyHub/PolyPhy"
 
