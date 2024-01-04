@@ -15,7 +15,7 @@ class PPKernels:
     @ti.func
     def custom_mod(self, a, b) -> PPTypes.FLOAT_GPU:
         return a - b * ti.floor(a / b)
-  
+
     @ti.func
     def angle_to_dir_2D(self, angle) -> PPTypes.VEC2f:
         return timath.normalize(PPTypes.VEC2f(ti.cos(angle), ti.sin(angle)))
