@@ -31,10 +31,10 @@ status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.re
 - Python 3.x, Anaconda recommended
 
 ## Repository
-The main repository is located at the following GitHub URL:<br/>
+The main repository is located at the following GitHub URL: <br/>
 <https://github.com/PolyPhyHub/PolyPhy.git>
 
-The other repositories are linked from the following "org" page:<br/>
+The other repositories are linked from the following "org" page: <br/>
 <https://github.com/PolyPhyHub/>
 
 ## Running PolyPhy
