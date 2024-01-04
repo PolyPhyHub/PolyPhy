@@ -14,13 +14,14 @@ from utils.logger import Logger
 
 from PIL import Image
 
+
 class PPConfig_2DContinuous(PPConfig):
     def __init__(self):
         super()
 
     def register_data(self, ppData):
         self.ppData = ppData
-        self.DATA_TO_AGENTS_RATIO =  1.0e4 / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
+        self.DATA_TO_AGENTS_RATIO = 1.0e4 / PPTypes.FLOAT_CPU(ppData.N_AGENTS)
         self.DOMAIN_SIZE_MAX = np.max([ppData.DOMAIN_SIZE[0], ppData.DOMAIN_SIZE[1]])
         self.TRACE_RESOLUTION = PPTypes.INT_CPU(
             (PPTypes.FLOAT_CPU(self.TRACE_RESOLUTION_MAX) * ppData.DOMAIN_SIZE[0] /
@@ -57,7 +58,7 @@ class PPInputData_2DContinuous(PPInputData):
         self.data = ti.tools.image.imread(self.ROOT + self.input_file).astype(PPTypes.FLOAT_CPU) / 255.0
         self.DATA_RESOLUTION = self.data.shape[0:2]
         self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
-        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT \
+        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT
                             * PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[1]) / PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[0]))
         self.DOMAIN_MIN = (0.0, 0.0)
         self.DOMAIN_MAX = self.DOMAIN_SIZE
@@ -69,7 +70,7 @@ class PPInputData_2DContinuous(PPInputData):
         self.data = rng.uniform(low=0.0, high=2.0, size=self.data.shape).astype(dtype=PPTypes.FLOAT_CPU)
         self.DATA_RESOLUTION = (PPConfig.TRACE_RESOLUTION_MAX, PPConfig.TRACE_RESOLUTION_MAX)
         self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
-        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT \
+        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT
                             * PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[1]) / PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[0]))
         self.DOMAIN_MIN = (0.0, 0.0)
         self.DOMAIN_MAX = self.DOMAIN_SIZE

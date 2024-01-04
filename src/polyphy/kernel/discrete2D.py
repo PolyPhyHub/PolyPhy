@@ -12,7 +12,7 @@ from .common import PPKernels
 
 @ti.data_oriented
 class PPKernels_2DDiscrete(PPKernels):
-    
+
     @ti.kernel
     def data_step_2D_discrete(
                 self,
