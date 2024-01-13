@@ -58,8 +58,7 @@ class PPInputData_2DContinuous(PPInputData):
         self.data = ti.tools.image.imread(self.ROOT + self.input_file).astype(PPTypes.FLOAT_CPU) / 255.0
         self.DATA_RESOLUTION = self.data.shape[0:2]
         self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
-        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT
-                            * PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[1]) / PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[0]))
+        self.DOMAIN_SIZE = (PPConfig.DOMAIN_SIZE_DEFAULT, PPConfig.DOMAIN_SIZE_DEFAULT * PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[1]) / PPTypes.FLOAT_CPU(self.DATA_RESOLUTION[0]))
         self.DOMAIN_MIN = (0.0, 0.0)
         self.DOMAIN_MAX = self.DOMAIN_SIZE
         self.AVG_WEIGHT = 1.0
