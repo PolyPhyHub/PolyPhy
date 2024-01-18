@@ -15,11 +15,11 @@ class PPKernels:
     @ti.func
     def custom_mod(self, a, b) -> PPTypes.FLOAT_GPU:
         return a - b * ti.floor(a / b)
-    
+
     @ti.func
     def angle_to_dir_2D(self, angle) -> PPTypes.VEC2f:
         return timath.normalize(PPTypes.VEC2f(ti.cos(angle), ti.sin(angle)))
-    
+
     @ti.func
     def world_to_grid_2D(
             self,
@@ -56,7 +56,7 @@ class PPKernels:
         for cell in ti.grouped(dst):
             dst[cell] = src[cell]
         return
-    
+
     @ti.kernel
     def deposit_relaxation_step_2D(
             self,
@@ -93,7 +93,7 @@ class PPKernels:
             # to avoid accumulating quantization errors
             trace_field[cell][0] *= (attenuation - 0.001 + 0.002 * ti.random(dtype=PPTypes.FLOAT_GPU))
         return
-    
+
     @ti.kernel
     def agent_step_2D(
                 self,
@@ -235,7 +235,7 @@ class PPKernels:
                         N_AGENTS,
                         PPTypes.FLOAT_GPU)) * weight
         return
-    
+
     @ti.kernel
     def render_visualization_2D(
                 self,

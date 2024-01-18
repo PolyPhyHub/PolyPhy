@@ -12,6 +12,22 @@ authors = [
 maintainers = [
   {name = "Prashant Jha", email = "prashant.bits01@gmail.com" }
 ]
+dynamic = ["urls", "scripts", "dependencies", "optional-dependencies"]
+
+[urls]
+Documentation = "https://github.com/PolyPhyHub/PolyPhy"
+Source = "https://github.com/PolyPhyHub/PolyPhy"
+
+[scripts]
+polyphy = "polyphy.__main__:main"
+
+[dependencies]
+python = 'importlib-metadata; python_version<"3.8"'
+pytest = "*"
+pytest-cov = "*"
+
+[optional-dependencies]
+testing = ["setuptools", "pytest", "pytest-cov"]
 
 [build-system]
 requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5", "wheel"]
