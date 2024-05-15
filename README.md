@@ -81,6 +81,29 @@ The use-cases currently supported by *PolyPhy* are divided according to the data
   ![3D_discrete_explicit](https://user-images.githubusercontent.com/26778894/215981925-96ed3322-0068-497d-a2e7-4543c7ef8e41.jpg)
 </p>
 
+## Hyperparameters used
+
+1. **Sensing Distance:** The **sensing distance** parameter determines the range within which each agent can detect and interact with its surroundings. It influences the extent of exploration and interaction with neighboring data points.
+
+2. **Sensing Angle:** This parameter defines the **angular range** within which an agent can sense its environment. It impacts the directionality of agent movement and interaction with nearby points.
+
+3. **Sampling Exponent:** The **sampling exponent** parameter likely relates to the exploration strategy employed by the agents. It affects how agents sample the data space and adjust their movement based on local conditions.
+
+4. **Step Size:** **Step size** determines the distance an agent moves during each iteration or step of the algorithm. It controls the granularity of agent movement and exploration within the data space.
+
+5. **Data Deposit:** This parameter governs the amount or rate at which agents deposit substance (e.g., nutrients) on data points. It influences the reinforcement of paths or connections between data points based on environmental cues.
+
+6. **Agent Deposit:** **Agent deposit** refers to the amount or rate at which agents deposit substance on their own path or trajectory. It affects the reinforcement of individual agent trails during exploration.
+
+7. **Agent Attention:** **Agent attention** likely determines the level of focus or priority agents allocate to different regions of the data space. It influences the prioritization of exploration and interaction with data points based on their importance or relevance.
+
+8. **Trace Attention:** This parameter governs how much attention agents pay to existing trails or paths during exploration. It affects the tendency of agents to follow or deviate from existing paths based on environmental cues.
+
+9. **Deposit Visibility:** **Deposit visibility** determines the transparency or visibility of substance deposits made by agents. It influences the visual representation of agent trails or paths in the reconstructed network.
+
+10. **Trace Visibility:** **Trace visibility** refers to the transparency or visibility of existing agent trails or paths. It affects the visual clarity or prominence of the reconstructed network structure based on agent movement.
+
+
 ## How to Use PolyPhy
 Below is a recording of the [PolyPhy Workshop](https://elek.pub/workshop_cross2022.html) given as part of the [OSPO Symposium 2022](https://ospo.ucsc.edu/event/20220927/).<br/>
 This 90-minute workshop covers *PolyPhy*'s research background, all of the 5 above usecases, and extended technical discussion.
