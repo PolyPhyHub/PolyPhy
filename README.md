@@ -81,6 +81,19 @@ The use-cases currently supported by *PolyPhy* are divided according to the data
   ![3D_discrete_explicit](https://user-images.githubusercontent.com/26778894/215981925-96ed3322-0068-497d-a2e7-4543c7ef8e41.jpg)
 </p>
 
+## Hyperparameters used
+
+1. **`Sensing dist`:** Average distance in world units at which agents probe the deposit.  
+2. **`Sensing angle`:** Angle in radians within which agents probe deposit (left and right concentric to movement direction).  
+3. **`Sampling expo`:** Sampling sharpness or 'acuteness' or 'temperature' which tunes the directional mutation behavior.  
+4. **`Step size`:** Average size of the step in world units which agents make in each iteration.  
+5. **`Data deposit`:** Amount of marker 'deposit' that *data* emit at every iteration.  
+6. **`Agent deposit`:** Amount of marker 'deposit' that *agents* emit at every iteration.  
+7. **`Deposit attn`:** Attenuation or 'decay' rate of the diffusing combined agent+data deposit field.  
+8. **`Trace attn`:** Attenuation or 'decay' of the non-diffusing agent trace field.  
+9. **`Deposit vis`:** Visualization intensity of the green deposit field (logarithmic).  
+10. **`Trace vis`:** Visualization intensity of the red trace field (logarithmic).  
+
 ## How to Use PolyPhy
 Below is a recording of the [PolyPhy Workshop](https://elek.pub/workshop_cross2022.html) given as part of the [OSPO Symposium 2022](https://ospo.ucsc.edu/event/20220927/).<br/>
 This 90-minute workshop covers *PolyPhy*'s research background, all of the 5 above usecases, and extended technical discussion.
