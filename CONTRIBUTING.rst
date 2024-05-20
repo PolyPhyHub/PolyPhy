@@ -266,13 +266,12 @@ on PyPI_, the following steps can be used to release a new version for
    of environments, including private companies and proprietary code bases.
 
 
-.. <-- strart -->
+.. <-- start -->
 
 .. |the repository service| replace:: GitHub
 .. |contribute button| replace:: "Create pull request"
 
 .. _repository: https://github.com/<USERNAME>/polyphy
-.. _issue tracker: https://github.com/<USERNAME>/polyphy/issues
 .. <-- end -->
 
 
