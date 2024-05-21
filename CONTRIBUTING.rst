@@ -266,13 +266,12 @@ on PyPI_, the following steps can be used to release a new version for
    of environments, including private companies and proprietary code bases.
 
 
-.. <-- strart -->
+.. <-- start -->
 
 .. |the repository service| replace:: GitHub
 .. |contribute button| replace:: "Create pull request"
 
 .. _repository: https://github.com/<USERNAME>/polyphy
-.. _issue tracker: https://github.com/<USERNAME>/polyphy/issues
 .. <-- end -->
 
 
@@ -282,6 +281,7 @@ on PyPI_, the following steps can be used to release a new version for
 
 
 .. _black: https://pypi.org/project/black/
+.. _issue tracker: https://github.com/PolyPhyHub/PolyPhy/issues
 .. _CommonMark: https://commonmark.org/
 .. _contribution-guide.org: https://www.contribution-guide.org/
 .. _creating a PR: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request
