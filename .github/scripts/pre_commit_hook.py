@@ -11,7 +11,7 @@ def check_python_header(file_path):
 
     with open(file_path, 'r') as file:
         content = file.read()
-        if not re.match(expected_header, content, re.MULTILINE):
+        if not re.match(expected_header, content):
             print(f"Error in {file_path}: \
                 Python file does not have the expected header format.")
             sys.exit(1)
