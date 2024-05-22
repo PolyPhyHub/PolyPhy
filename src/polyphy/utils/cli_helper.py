@@ -39,6 +39,11 @@ class CliHelper:
             type=int,
             help="Y resolution of the main window")
         parser.add_argument(
+            '-m',
+            '--domain-margin',
+            type=float,
+            help="Domain margin parameter")
+        parser.add_argument(
             '-t',
             '--trace-res-max',
             type=int,
@@ -174,6 +179,8 @@ class CliHelper:
             ppConfig.setter("agent_deposit", args.agent_deposit)
         if args.deposit_attenuation:
             ppConfig.setter("deposit_attenuation", args.deposit_attenuation)
+        if args.domain_margin:
+            ppConfig.setter("DOMAIN_MARGIN", args.domain_margin)
         if args.trace_attenuation:
             ppConfig.setter("trace_attenuation", args.trace_attenuation)
         if args.deposit_visualization:
