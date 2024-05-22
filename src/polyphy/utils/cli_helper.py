@@ -180,7 +180,7 @@ class CliHelper:
         if args.deposit_attenuation:
             ppConfig.setter("deposit_attenuation", args.deposit_attenuation)
         if args.domain_margin:
-            ppConfig.setter("DOMAIN_MARGIN", args.domain_margin)    
+            ppConfig.setter("DOMAIN_MARGIN", args.domain_margin)
         if args.trace_attenuation:
             ppConfig.setter("trace_attenuation", args.trace_attenuation)
         if args.deposit_visualization:
