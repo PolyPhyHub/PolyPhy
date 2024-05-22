@@ -92,7 +92,14 @@ The use-cases currently supported by *PolyPhy* are divided according to the data
 7. **`Deposit attn`:** Attenuation or 'decay' rate of the diffusing combined agent+data deposit field.  
 8. **`Trace attn`:** Attenuation or 'decay' of the non-diffusing agent trace field.  
 9. **`Deposit vis`:** Visualization intensity of the green deposit field (logarithmic).  
-10. **`Trace vis`:** Visualization intensity of the red trace field (logarithmic).  
+10. **`Trace vis`:** Visualization intensity of the red trace field (logarithmic).
+
+## Options
+1. **`Distance distribution`:** strategy for sampling the sensing and movement distances
+2. **`Directional distribution`:** strategy for sampling the sensing and movement directions
+3. **`Directional mutation`:** strategy for selecting the new movement direction
+4. **`Deposit fetching`:** access behavior when sampling the deposit field
+5. **`Agent boundary handling`:** what do agents do if they reach the boundary of the simulation domain
 
 ## How to Use PolyPhy
 Below is a recording of the [PolyPhy Workshop](https://elek.pub/workshop_cross2022.html) given as part of the [OSPO Symposium 2022](https://ospo.ucsc.edu/event/20220927/).<br/>
