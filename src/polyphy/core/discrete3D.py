@@ -194,7 +194,6 @@ class PPSimulation_3DDiscrete(PPSimulation):
                  ppConfig,
                  batch_mode=False,
                  num_iterations=-1):
-                     
         self.current_deposit_index = 0
         self.do_export = False
         self.do_screenshot = False
@@ -398,6 +397,7 @@ class PPSimulation_3DDiscrete(PPSimulation):
 
             if not batch_mode:
                 window.destroy()
+
 
 class PPPostSimulation_3DDiscrete(PPPostSimulation):
     def __init__(self, ppInternalData):
