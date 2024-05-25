@@ -228,7 +228,12 @@ class PPSimulation_3DDiscrete(PPSimulation):
                     if curr_iteration > num_iterations:
                         break
                     if (num_iterations % curr_iteration) == 0:
-                        Logger.logToStdOut("info", 'Running MCPM... iteration', curr_iteration, '/', num_iterations)
+                        Logger.logToStdOut(
+                            "info",
+                            'Running MCPM... iteration',
+                            curr_iteration,
+                            '/',
+                            num_iterations)
                 else:
                     # batch_mode is False
                     # Handle controls
@@ -331,6 +336,7 @@ class PPSimulation_3DDiscrete(PPSimulation):
                         ppInternalData.deposit_field)
                     ppInternalData.ppKernels.trace_relaxation_step_3D_discrete(
                         ppConfig.trace_attenuation, ppInternalData.trace_field)
+                    self.current_deposit_index = 1 - self.current_deposit_index
 
                 # Render visualization
                 ppInternalData.ppKernels.render_visualization_3D_raymarched(
