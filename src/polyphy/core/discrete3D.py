@@ -245,6 +245,22 @@ class PPSimulation_3DDiscrete(PPSimulation):
                             self.hide_UI = not self.hide_UI
                         if window.event.key in [ti.ui.ESCAPE]:
                             self.do_quit = True
+                        # Handle keyboard controls
+                        if window.event.key == ti.ui.UP:
+                            camera_polar -= 0.1
+                            camera_polar = max(0.01, min(np.pi - 0.01, camera_polar))
+                        if window.event.key == ti.ui.DOWN:
+                            camera_polar += 0.1
+                            camera_polar = max(0.01, min(np.pi - 0.01, camera_polar))
+                        if window.event.key == ti.ui.LEFT:
+                            camera_azimuth -= 0.1
+                        if window.event.key == ti.ui.RIGHT:
+                            camera_azimuth += 0.1
+                        if window.event.key == ti.ui.PLUS:
+                            camera_distance -= 0.1 * ppConfig.DOMAIN_SIZE_MAX
+                            camera_distance = max(0.85 * ppConfig.DOMAIN_SIZE_MAX, camera_distance)
+                        if window.event.key == ti.ui.MINUS:
+                            camera_distance += 0.1 * ppConfig.DOMAIN_SIZE_MAX
 
                     # Handle camera control: rotation
                     mouse_pos = window.get_cursor_pos()
@@ -341,6 +357,28 @@ class PPSimulation_3DDiscrete(PPSimulation):
                     ppInternalData.deposit_field,
                     ppInternalData.trace_field,
                     ppInternalData.vis_field)
+
+                # Handle 3D rendering
+                if not batch_mode:
+                    if window.is_pressed(ti.ui.LMB):
+                        x = int(mouse_pos[0] * canvas.get_image().shape[1])
+                        y = int(mouse_pos[1] * canvas.get_image().shape[0])
+                        if (x >= 0) and (y >= 0) and (x < canvas.get_image().shape[1]) and (y < canvas.get_image().shape[0]):
+                            pixels = np.array(canvas.get_image())
+                            rgb = pixels[y, x, :]
+                            lum = np.sqrt(0.299 * rgb[0] ** 2 + 0.587 * rgb[1] ** 2 + 0.114 * rgb[2] ** 2)
+                            Logger.logToStdOut("info", "Luminosity: %.2f" % (lum))
+
+                    camera_pos = np.array([
+                        camera_distance * np.sin(camera_polar) * np.sin(camera_azimuth),
+                        camera_distance * np.cos(camera_polar),
+                        camera_distance * np.sin(camera_polar) * np.cos(camera_azimuth)
+                    ])
+                    camera_dir = -camera_pos / np.linalg.norm(camera_pos)
+                    camera_up = np.array([0.0, 1.0, 0.0])
+                    canvas.set_background_color((0.0, 0.0, 0.0))
+                    scene = ti.ui.Scene()
+                    canvas.scene(scene, camera_pos, camera_dir, camera_up)
 
                 if batch_mode is False:
                     canvas.set_image(ppInternalData.vis_field)
