@@ -378,6 +378,7 @@ class PPSimulation_3DDiscrete(PPSimulation):
                     camera_dir = -camera_pos / np.linalg.norm(camera_pos)
                     camera_up = np.array([0.0, 1.0, 0.0])
                     canvas.set_background_color((0.0, 0.0, 0.0))
+                    scene = ti.ui.Scene()
                     canvas.scene(scene, camera_pos, camera_dir, camera_up)
 
                 if batch_mode is False:
