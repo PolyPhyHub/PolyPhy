@@ -189,7 +189,12 @@ class PPSimulation_3DDiscrete(PPSimulation):
     def __drawGUI__(self, window, ppConfig):
         GuiHelper.draw(self, window, ppConfig)
 
-    def __init__(self, ppInternalData, ppConfig, batch_mode=False, num_iterations=-1):
+    def __init__(self,
+                 ppInternalData,
+                 ppConfig,
+                 batch_mode=False,
+                 num_iterations=-1):
+                     
         self.current_deposit_index = 0
         self.do_export = False
         self.do_screenshot = False
@@ -206,7 +211,11 @@ class PPSimulation_3DDiscrete(PPSimulation):
         # Check if file exists
         if not os.path.exists("/tmp/flag"):
             if batch_mode is False:
-                window = ti.ui.Window('PolyPhy', (ppInternalData.vis_field.shape[0], ppInternalData.vis_field.shape[1]), show_window=True)
+                window = ti.ui.Window(
+                    'PolyPhy',
+                    (ppInternalData.vis_field.shape[0],
+                     ppInternalData.vis_field.shape[1]),
+                    show_window=True)
                 window.show()
                 canvas = window.get_canvas()
 
@@ -323,6 +332,27 @@ class PPSimulation_3DDiscrete(PPSimulation):
                     ppInternalData.ppKernels.trace_relaxation_step_3D_discrete(
                         ppConfig.trace_attenuation, ppInternalData.trace_field)
 
+                # Render visualization
+                ppInternalData.ppKernels.render_visualization_3D_raymarched(
+                    ppConfig.trace_vis,
+                    ppConfig.deposit_vis,
+                    camera_distance,
+                    camera_polar,
+                    camera_azimuth,
+                    ppConfig.n_ray_steps,
+                    self.current_deposit_index,
+                    ppConfig.TRACE_RESOLUTION,
+                    ppConfig.DEPOSIT_RESOLUTION,
+                    ppConfig.VIS_RESOLUTION,
+                    ppConfig.DOMAIN_SIZE_MAX,
+                    ppConfig.ppData.DOMAIN_MIN,
+                    ppConfig.ppData.DOMAIN_MAX,
+                    ppConfig.ppData.DOMAIN_CENTER,
+                    ppConfig.RAY_EPSILON,
+                    ppInternalData.deposit_field,
+                    ppInternalData.trace_field,
+                    ppInternalData.vis_field)
+
                 # Handle 3D rendering
                 if not batch_mode:
                     if window.is_pressed(ti.ui.LMB):
@@ -344,33 +374,23 @@ class PPSimulation_3DDiscrete(PPSimulation):
                     canvas.set_background_color((0.0, 0.0, 0.0))
                     canvas.scene(scene, camera_pos, camera_dir, camera_up)
 
+                if batch_mode is False:
+                    canvas.set_image(ppInternalData.vis_field)
                     if self.do_screenshot:
-                        canvas.screenshot("/tmp/screenshot.png")
+                        window.save_image(
+                            ppConfig.ppData.ROOT + 'capture/screenshot_'
+                            + Logger.stamp() + '.png')
+                        # Must appear before window.show() call
                         self.do_screenshot = False
-
-                    if self.do_export:
-                        data = {
-                            "frame": frame,
-                            "time": time,
-                            "agents": {
-                                "positions": agents,
-                                "directions": agents_directions
-                            },
-                            "data_field": data_field
-                        }
-                        with open("/tmp/data.json", "w") as f:
-                            json.dump(data, f)
-                        self.do_export = False
-
-                # Handle quitting
+                    window.show()
+                if self.do_export:
+                    ppInternalData.store_fit()
+                    self.do_export = False
                 if self.do_quit:
-                    if os.path.exists("/tmp/flag"):
-                        os.remove("/tmp/flag")
                     break
 
             if not batch_mode:
                 window.destroy()
-
 
 class PPPostSimulation_3DDiscrete(PPPostSimulation):
     def __init__(self, ppInternalData):
