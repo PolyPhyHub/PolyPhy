@@ -6,6 +6,7 @@
 from datetime import datetime
 import logging
 import time
+from logging.handlers import RotatingFileHandler
 
 
 class Logger:
@@ -45,6 +46,7 @@ class Logger:
     # FILE:
     file_logger = logging.getLogger("file")
     file_handler = logging.FileHandler("polyphy.log")
+    file_handler = RotatingFileHandler("polyphy.log", maxBytes=1024*1024, backupCount=3)
     file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(file_formatter)
     file_logger.addHandler(file_handler)
@@ -64,14 +66,12 @@ class Logger:
 
     @staticmethod
     def logException(level, exception, *msg) -> None:
+        log_msg = " ".join(map(str, msg))
+        log_msg += f"\nException: {repr(exception)}"
+        log_msg += f"\nStack Trace: {traceback.format_exc()}"
         
-    # Construct log message with exception info
-    log_msg = " ".join(map(str, msg))
-    log_msg += f"\nException: {repr(exception)}"
-    log_msg += f"\nStack Trace: {traceback.format_exc()}"
-    
-    # Log to console
-    Logger.logToStdOut(level, log_msg)
-    
-    # Log to file
-    Logger.logToFile(level, log_msg)
+        # Log to console
+        Logger.logToStdOut(level, log_msg)
+        
+        # Log to file
+        Logger.logToFile(level, log_msg)
