@@ -61,3 +61,17 @@ class Logger:
         Logger.file_logger.setLevel(Logger.log_level.get(level, logging.INFO))
         res = " ".join(map(str, msg))
         Logger.file_log_functions.get(level, Logger.file_logger.info)(res)
+
+    @staticmethod
+    def logException(level, exception, *msg) -> None:
+        
+    # Construct log message with exception info
+    log_msg = " ".join(map(str, msg))
+    log_msg += f"\nException: {repr(exception)}"
+    log_msg += f"\nStack Trace: {traceback.format_exc()}"
+    
+    # Log to console
+    Logger.logToStdOut(level, log_msg)
+    
+    # Log to file
+    Logger.logToFile(level, log_msg)
