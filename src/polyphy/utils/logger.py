@@ -70,9 +70,7 @@ class Logger:
         log_msg = " ".join(map(str, msg))
         log_msg += f"\nException: {repr(exception)}"
         log_msg += f"\nStack Trace: {traceback.format_exc()}"
-        
         # Log to console
         Logger.logToStdOut(level, log_msg)
-        
         # Log to file
         Logger.logToFile(level, log_msg)
