@@ -122,7 +122,14 @@ tox -av  # to list all the tasks available
 ```
 
 #### GitHub Actions
-GitHub Actions is being used to test on MacOs as well as Linux. It allows for the automation of the building, testing, and deployment pipline.
+
+GitHub Actions used for Polyphy are:
+
+- **`batch_mode.yml`**: Automates testing for the Polyphy project by running `polyphy.py` scripts on Ubuntu, ensuring expected output files are generated.
+- **`macos_python.yml`**: Runs tests on MacOS with multiple Python versions, including linting with `flake8` and testing with `pytest`.
+- **`python-package.yml`**: Builds and tests the Polyphy Python package on Ubuntu 22.04 across various Python versions, including linting and code coverage reporting.
+- **`release_package.yml`**: Publishes the Polyphy package to `PyPI` if a new version is detected, using `Twine` for the upload process.
+- **`ubuntu20_python.yml`**: Runs tests on Ubuntu 20.04 with multiple Python versions, including linting, `pytest` for Python files, and `pytest` for Jupyter notebooks.
 
 #### Codecov
 A service that generates a visual report of how much code has been tested. All configuration settings can be found in the codecov.yml file.
