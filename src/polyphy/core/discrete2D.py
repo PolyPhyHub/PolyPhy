@@ -180,6 +180,9 @@ class PPSimulation_2DDiscrete(PPSimulation):
             curr_iteration = 0
             # Main simulation and rendering loop
             while window.running if 'window' in locals() else True:
+                # Reset the event handled flag at the start of each frame
+                event_handled = False  
+
                 if batch_mode is True:
                     # Handle progress monitor
                     curr_iteration += 1
@@ -191,21 +194,28 @@ class PPSimulation_2DDiscrete(PPSimulation):
                 else:
                     # batch_mode is False
                     # Handle controls
-                    if window.get_event(ti.ui.PRESS):
-                        if window.event.key == 'e':
-                            self.do_export = True
-                        if window.event.key == 's':
-                            self.do_screenshot = True
-                        if window.event.key == 'h':
-                            self.hide_UI = not self.hide_UI
-                        if window.event.key in [ti.ui.ESCAPE]:
-                            self.do_quit = True
-                        if window.event.key in [ti.ui.LMB]:
-                            self.data_edit_index = ppInternalData.edit_data(
-                                self.data_edit_index, window)
-                    if window.is_pressed(ti.ui.RMB):
+                    while window.get_event(ti.ui.PRESS):
+                        if not event_handled:
+                            if window.event.key == 'e':
+                                self.do_export = True
+                                event_handled = True
+                            if window.event.key == 's':
+                                self.do_screenshot = True
+                                event_handled = True
+                            if window.event.key == 'h':
+                                self.hide_UI = not self.hide_UI
+                                event_handled = True
+                            if window.event.key in [ti.ui.ESCAPE]:
+                                self.do_quit = True
+                                event_handled = True
+                            if window.event.key in [ti.ui.LMB]:
+                                self.data_edit_index = ppInternalData.edit_data(
+                                    self.data_edit_index, window)
+                                event_handled = True
+                    if window.is_pressed(ti.ui.RMB) and not event_handled:
                         self.data_edit_index = ppInternalData.edit_data(
                             self.data_edit_index, window)
+                        event_handled = True
                     if not self.hide_UI:
                         self.__drawGUI__(window, ppConfig)
 
