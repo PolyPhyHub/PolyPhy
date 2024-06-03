@@ -181,7 +181,7 @@ class PPSimulation_2DDiscrete(PPSimulation):
             # Main simulation and rendering loop
             while window.running if 'window' in locals() else True:
                 # Reset the event handled flag at the start of each frame
-                event_handled = False  
+                event_handled = False
 
                 if batch_mode is True:
                     # Handle progress monitor
