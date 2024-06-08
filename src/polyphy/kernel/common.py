@@ -30,7 +30,7 @@ class PPKernels:
         pos_relative = (pos_world - domain_min) / (domain_max - domain_min)
         grid_coord = ti.cast(pos_relative * ti.cast(
             grid_resolution, PPTypes.FLOAT_GPU), PPTypes.INT_GPU)
-        return ti.max(PPTypes.VEC2i(0, 0), ti.min(grid_coord, grid_resolution - (1, 1)))
+        return ti.max(PPTypes.VEC2i(0, 0), ti.min(grid_coord, grid_resolution - PPTypes.VEC2i(1, 1)))
 
     @ti.func
     def ray_AABB_intersection(self, ray_pos, ray_dir, AABB_min, AABB_max):
