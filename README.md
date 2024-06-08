@@ -141,3 +141,7 @@ A service that generates a visual report of how much code has been tested. All c
 
 #### Appveyor
 A service that can be used to test Windows. All configuration settings can be found in the appveyor.yml file.
+
+## How to Contribute
+
+We welcome and appreciate new contributions. Please take a moment to review our [Contribution Guidelines](./CONTRIBUTING.rst) to get started.
