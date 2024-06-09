@@ -1,7 +1,7 @@
 environment:
   matrix:
     - PYTHON: "C:\\Python38-x64"
-      PYTHON_VERSION: "3.8.x"
+      PYTHON_VERSION: "3.11.x"
       PYTHON_ARCH: "64"
 
 
