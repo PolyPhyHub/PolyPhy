@@ -60,11 +60,10 @@ class PPInputData_3DDiscrete(PPInputData):
             Logger.logToStdOut("error", "No input file specified.")
             return
 
-        Logger.logToStdOut("info", 'Loading input file... '
-                           + self.ROOT + self.input_file, self.DOMAIN_MIN)
+        Logger.logToStdOut("info", f'Loading input file: {self.input_file}', self.DOMAIN_MIN)
         try:
             self.data = np.loadtxt(
-                self.ROOT + self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
+                self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
             self.N_DATA = self.data.shape[0]
             self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
             self.domain_min = (
