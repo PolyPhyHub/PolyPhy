@@ -15,6 +15,7 @@ from pipelines.discrete3D import PolyPhy_3DDiscrete
 
 
 class CliHelper:
+    args = None
     @staticmethod
     def parse_args():
         parser = argparse.ArgumentParser(description="PolyPhy")
