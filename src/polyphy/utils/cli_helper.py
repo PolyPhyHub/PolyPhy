@@ -143,29 +143,21 @@ class CliHelper:
     @staticmethod
     def parse_values(ppConfig):
         args = CliHelper.args
-        # Mapping pipeline names to configuration classes
-        pipeline_config_map = {
-            "2d_discrete": PPConfig_2DDiscrete,
-            "2d_continuous": PPConfig_2DContinuous,
-            "3d_discrete": PPConfig_3DDiscrete
-        }
-        # Initialize ppConfig based on the selected pipeline
-        ppConfig_class = pipeline_config_map.get(args.pipeline)
-        if ppConfig_class:
-            ppConfig = ppConfig_class()
-        else:
-            raise ValueError(f"Invalid pipeline specified: {args.pipeline}")
-        # Set input file if provided
+        if args.pipeline == "2d_discrete":
+            ppConfig = PPConfig_2DDiscrete()
+        elif args.pipeline == "2d_continuous":
+            ppConfig = PPConfig_2DContinuous()
+        elif args.pipeline == "3d_discrete":
+            ppConfig = PPConfig_3DDiscrete()
         if args.input_file:
-            if os.path.isfile(args.input_file):
-                ppConfig.setter("input_file", str(args.input_file))
-            else:
-                raise FileNotFoundError(f"Input file not found: {args.input_file}")
-        # Set other configuration options
-        ppConfig.setter("batch_mode", args.batch_mode)
+            ppConfig.setter("input_file", str(args.input_file))
+        else:
+            ppConfig.setter("input_file", '')
+            # raise AssertionError("Please specify the main input data file (string relative to the root directory)")
         if args.batch_mode:
+            print("Batch mode activated!")
             if args.num_iterations:
-                logging.info(f"Batch mode activated! Number of iterations: {int(args.num_iterations)}")
+                print(f"Number of iterations: {int(args.num_iterations)}")
             else:
                 raise ValueError("Please set number of iterations for batch mode using -n <int>")
         if args.num_iterations and not args.batch_mode:
