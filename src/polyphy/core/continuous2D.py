@@ -11,6 +11,7 @@ from .common import PPTypes, PPConfig, PPInputData, PPInternalData
 from .common import PPSimulation, PPPostSimulation
 from utils.gui_helper import GuiHelper
 from utils.logger import Logger
+from utils.metadata import get_metadata, save_metadata
 
 from PIL import Image
 
@@ -252,6 +253,9 @@ class PPSimulation_2DContinuous(PPSimulation):
                     window.show()
                 if self.do_export:
                     ppInternalData.store_fit()
+                    # Generate metadata and save
+                    metadata_dict = get_metadata(ppConfig, ppInternalData)
+                    save_metadata(metadata_dict, ppConfig.ppData.ROOT + 'metadata.json')
                     self.do_export = False
                 if self.do_quit:
                     break
