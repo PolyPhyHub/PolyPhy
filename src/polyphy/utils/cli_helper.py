@@ -158,7 +158,7 @@ class CliHelper:
             if args.num_iterations:
                 print(f"Number of iterations: {int(args.num_iterations)}")
             else:
-                raise AssertionError("Please set number of iterations for batch mode using -n <int>")
+                raise ValueError("Please set number of iterations for batch mode using -n <int>")
         if args.num_iterations and not args.batch_mode:
             raise AssertionError("Please set to batch mode using -b argument")
         if args.window_res_x and args.window_res_y:
