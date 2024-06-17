@@ -4,7 +4,6 @@
 # Maintainers:
 
 import argparse
-import logging
 
 from core.common import PPConfig
 from core.discrete2D import PPConfig_2DDiscrete
