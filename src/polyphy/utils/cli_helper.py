@@ -229,9 +229,12 @@ class CliHelper:
             elif args.agent_boundary_handling == "re-initialize-randomly":
                 ppConfig.setter("agent_boundary_handling",
                                 PPConfig.EnumAgentBoundaryHandling.REINIT_RANDOMLY)
-        if args.pipeline == "2d_discrete":
-            PolyPhy_2DDiscrete(ppConfig, args.batch_mode, args.num_iterations).start_simulation()
-        elif args.pipeline == "2d_continuous":
-            PolyPhy_2DContinuous(ppConfig, args.batch_mode, args.num_iterations).start_simulation()
-        elif args.pipeline == "3d_discrete":
-            PolyPhy_3DDiscrete(ppConfig, args.batch_mode, args.num_iterations).start_simulation()
+    def start_simulation(pipeline, ppConfig, batch_mode, num_iterations):
+        if pipeline == "2d_discrete":
+            PolyPhy_2DDiscrete(ppConfig, batch_mode, num_iterations).start_simulation()
+        elif pipeline == "2d_continuous":
+            PolyPhy_2DContinuous(ppConfig, batch_mode, num_iterations).start_simulation()
+        elif pipeline == "3d_discrete":
+            PolyPhy_3DDiscrete(ppConfig, batch_mode, num_iterations).start_simulation()
+    
+    start_simulation(args.pipeline, ppConfig, args.batch_mode, args.num_iterations)
