@@ -3,7 +3,7 @@ import os
 
 def get_metadata(ppConfig, ppInternalData):
     metadata = {
-        "_dataset": ppConfig.ppData.input_file,
+        "dataset": ppConfig.ppData.input_file,
         "number_of_data_points": ppConfig.ppData.data.size,
         "number_of_agents": ppConfig.ppData.N_AGENTS,
         "simulation_grid_resolution": f"{ppConfig.TRACE_RESOLUTION[0]} x {ppConfig.TRACE_RESOLUTION[1]} [vox]",
@@ -17,7 +17,7 @@ def get_metadata(ppConfig, ppInternalData):
         "sense_spread": ppConfig.sense_angle,
         "persistence_coefficient": ppConfig.sampling_exponent,
         "agent_deposit": ppConfig.agent_deposit,
-        "sampling_sharpness": ppConfig.data_deposit
+        "sampling_sharpness": ppConfig.sampling_exponent
     }
     return metadata
 
