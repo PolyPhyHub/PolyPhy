@@ -1,16 +1,21 @@
-![header_narrow](https://user-images.githubusercontent.com/26778894/215681761-68adbc1c-4cfa-445d-a745-79a6c09118b2.jpg)
+<p align="center">
+  <img src="https://github.com/PolyPhyHub/PolyPhy/blob/main/third_party/Polyphy-logo.png">
+</p>
 
-[![PolyPhyHub - PolyPhy](https://img.shields.io/static/v1?label=PolyPhyHub&message=PolyPhy&color=blue&logo=github)](https://github.com/PolyPhyHub/PolyPhy "Go to GitHub repo")
-[![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/PolyPhyHub/PolyPhy/main/LICENSE)
-[![issues - PolyPhy](https://img.shields.io/github/issues/PolyPhyHub/PolyPhy)](https://github.com/PolyPhyHub/PolyPhy/issues)
-[![Python
-Package](https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml/badge.svg?branch=main)](https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml)
-[![image](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true)](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true)
-[![Documentation
-Status](https://readthedocs.org/projects/polyphy/badge/?version=latest)](https://polyphy.readthedocs.io/en/latest/?badge=latest)
-[![REUSE
-status](https://api.reuse.software/badge/git.fsfe.org/reuse/api)](https://api.reuse.software/info/git.fsfe.org/reuse/api)
-<!-- [![image](https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG)](https://codecov.io/gh/PolyPhyHub/PolyPhy) -->
+<p align="center">
+  <em>PolyPhy reconstructs continuous networks from sparse 2D or 3D data using GPU-accelerated simulation with the MCPM algorithm.</em>
+
+<p align="center">
+<a href="https://github.com/PolyPhyHub/PolyPhy" title="Go to GitHub repo"><img src="https://img.shields.io/static/v1?label=PolyPhyHub&message=PolyPhy&color=blue&logo=github" /></a>
+<a href="https://raw.githubusercontent.com/PolyPhyHub/PolyPhy/main/LICENSE"><img src="http://img.shields.io/badge/license-MIT-blue.svg" /></a>
+<a href="https://github.com/PolyPhyHub/PolyPhy/issues"><img src="https://img.shields.io/github/issues/PolyPhyHub/PolyPhy" /></a>
+<a href="https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml"><img src="https://github.com/PolyPhyHub/PolyPhy/actions/workflows/python-package.yml/badge.svg?branch=main" /></a>
+<a href="https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true"><img src="https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true" /></a>
+<a href="https://polyphy.readthedocs.io/en/latest/?badge=latest"><img src="https://readthedocs.org/projects/polyphy/badge/?version=latest" /></a>
+<a href="https://api.reuse.software/info/git.fsfe.org/reuse/api"><img src="https://api.reuse.software/badge/git.fsfe.org/reuse/api" /></a>
+<!-- <a href="https://codecov.io/gh/PolyPhyHub/PolyPhy"><img src="https://codecov.io/gh/PolyPhyHub/PolyPhy/branch/main/graph/badge.svg?token=D933raYfrG" /></a> -->
+</p>
+
 
 # PolyPhy
 *PolyPhy* is an unconventional toolkit for reconstructing continuous networks out of sparse 2D or 3D data. Such data can be defined as collections of discrete points, or a continuous sparse scalar field. *PolyPhy* produces a scalar density field that defines the recovered network structure. With the help of GPU-accelerated simulation and visualization, *PolyPhy* provides domain experts an interactive way to reconstruct discrete geometric data with an underlying network structure. The reconstruction is driven by the *Monte Carlo Physarum Machine* algorithm, a metaheuristic inspired by the morphology and dynamics of Physarum polycephalum aka 'slime mold'. 
