@@ -3,6 +3,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/PolyPhyHub/PolyPhy/wiki" target="_blank"><strong>Docs</strong></a> ·
+  <a href="https://polyphy.io/" target="_blank"><strong>Website</strong></a> ·
+  <a href="https://join.slack.com/t/polyphy/shared_invite/zt-2l80ho7pe-w113YSd72zzakcAWO5HXhw" target="_blank"><strong>Slack</strong></a> 
+</p>
+
+<p align="center">
   <em>PolyPhy reconstructs continuous networks from sparse 2D or 3D data using GPU-accelerated simulation with the MCPM algorithm.</em>
 
 <p align="center">
