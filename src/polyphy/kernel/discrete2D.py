@@ -31,5 +31,6 @@ class PPKernels_2DDiscrete(PPKernels):
                 PPTypes.VEC2f(DOMAIN_MIN),
                 PPTypes.VEC2f(DOMAIN_MAX),
                 PPTypes.VEC2i(DEPOSIT_RESOLUTION))
-            deposit_field[deposit_cell][current_deposit_index] += data_deposit * weight
+            if 0 <= deposit_cell[0] < DEPOSIT_RESOLUTION[0] and 0 <= deposit_cell[1] < DEPOSIT_RESOLUTION[1]:
+                deposit_field[deposit_cell][current_deposit_index] += data_deposit * weight
         return
