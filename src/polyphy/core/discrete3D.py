@@ -51,9 +51,10 @@ class PPConfig_3DDiscrete(PPConfig):
 
 class PPInputData_3DDiscrete(PPInputData):
     # TODO: load datasets from specified file + type
-    def __init__(self, input_file=None):
+    def __init__(self, input_file=None, rng=None):
         super().__init__()
         self.input_file = input_file
+        self.rng = rng
 
     def __load_from_file__(self):
         if self.input_file is None:
