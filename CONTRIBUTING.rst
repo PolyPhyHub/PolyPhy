@@ -160,15 +160,6 @@ Implement your changes
 
       to look for recurring communication patterns.
 
-#. Please check that your changes don't break any unit tests with::
-
-    tox
-
-   (after having installed |tox|_ with ``pip install tox`` or ``pipx``).
-
-   You can also use |tox|_ to run several other pre-configured tasks in the
-   repository. Try ``tox -av`` to see a list of the available checks.
-
 Submit your contribution
 ------------------------
 
