@@ -51,47 +51,36 @@ class PPConfig_3DDiscrete(PPConfig):
 
 class PPInputData_3DDiscrete(PPInputData):
     # TODO: load datasets from specified file + type
-    def __init__(self, input_file=None, rng=None):
-        super().__init__()
-        self.input_file = input_file
-        self.rng = rng
-
     def __load_from_file__(self):
-        if self.input_file is None:
-            Logger.logToStdOut("error", "No input file specified.")
-            return
-
-        Logger.logToStdOut("info", f'Loading input file: {self.input_file}', self.DOMAIN_MIN)
-        try:
-            self.data = np.loadtxt(
-                self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
-            self.N_DATA = self.data.shape[0]
-            self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
-            self.domain_min = (
-                np.min(self.data[:, 0]),
-                np.min(self.data[:, 1]),
-                np.min(self.data[:, 2]))
-            self.domain_max = (
-                np.max(self.data[:, 0]),
-                np.max(self.data[:, 1]),
-                np.max(self.data[:, 2]))
-            self.domain_size = np.subtract(self.domain_max, self.domain_min)
-            self.DOMAIN_MIN = (
-                self.domain_min[0] - PPConfig.DOMAIN_MARGIN * self.domain_size[0],
-                self.domain_min[1] - PPConfig.DOMAIN_MARGIN * self.domain_size[1],
-                self.domain_min[2] - PPConfig.DOMAIN_MARGIN * self.domain_size[2])
-            self.DOMAIN_MAX = (
-                self.domain_max[0] + PPConfig.DOMAIN_MARGIN * self.domain_size[0],
-                self.domain_max[1] + PPConfig.DOMAIN_MARGIN * self.domain_size[1],
-                self.domain_max[2] + PPConfig.DOMAIN_MARGIN * self.domain_size[2])
-            self.DOMAIN_CENTER = (
-                0.5 * (self.DOMAIN_MIN[0] + self.DOMAIN_MAX[0]),
-                0.5 * (self.DOMAIN_MIN[1] + self.DOMAIN_MAX[1]),
-                0.5 * (self.DOMAIN_MIN[2] + self.DOMAIN_MAX[2]))
-            self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
-            self.AVG_WEIGHT = np.mean(self.data[:, 3])
-        except Exception as e:
-            Logger.logToStdOut("error", f"Error loading input file: {str(e)}")
+        Logger.logToStdOut("info", 'Loading input file... '
+                           + self.ROOT + self.input_file, self.DOMAIN_MIN)
+        self.data = np.loadtxt(
+            self.ROOT + self.input_file, delimiter=",").astype(PPTypes.FLOAT_CPU)
+        self.N_DATA = self.data.shape[0]
+        self.N_AGENTS = PPConfig.N_AGENTS_DEFAULT
+        self.domain_min = (
+            np.min(self.data[:, 0]),
+            np.min(self.data[:, 1]),
+            np.min(self.data[:, 2]))
+        self.domain_max = (
+            np.max(self.data[:, 0]),
+            np.max(self.data[:, 1]),
+            np.max(self.data[:, 2]))
+        self.domain_size = np.subtract(self.domain_max, self.domain_min)
+        self.DOMAIN_MIN = (
+            self.domain_min[0] - PPConfig.DOMAIN_MARGIN * self.domain_size[0],
+            self.domain_min[1] - PPConfig.DOMAIN_MARGIN * self.domain_size[1],
+            self.domain_min[2] - PPConfig.DOMAIN_MARGIN * self.domain_size[2])
+        self.DOMAIN_MAX = (
+            self.domain_max[0] + PPConfig.DOMAIN_MARGIN * self.domain_size[0],
+            self.domain_max[1] + PPConfig.DOMAIN_MARGIN * self.domain_size[1],
+            self.domain_max[2] + PPConfig.DOMAIN_MARGIN * self.domain_size[2])
+        self.DOMAIN_CENTER = (
+            0.5 * (self.DOMAIN_MIN[0] + self.DOMAIN_MAX[0]),
+            0.5 * (self.DOMAIN_MIN[1] + self.DOMAIN_MAX[1]),
+            0.5 * (self.DOMAIN_MIN[2] + self.DOMAIN_MAX[2]))
+        self.DOMAIN_SIZE = np.subtract(self.DOMAIN_MAX, self.DOMAIN_MIN)
+        self.AVG_WEIGHT = np.mean(self.data[:, 3])
 
     def __generate_test_data__(self, rng):
         Logger.logToStdOut("info", 'Generating synthetic testing dataset...')
