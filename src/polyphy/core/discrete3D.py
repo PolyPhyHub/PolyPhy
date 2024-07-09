@@ -46,6 +46,7 @@ class PPConfig_3DDiscrete(PPConfig):
         self.input_file = ppData.input_file
         def log_info(message, *args):
             Logger.logToStdOut('info', message, *args)
+            
         log_info('Trace grid resolution:', self.TRACE_RESOLUTION)
         log_info('Deposit grid resolution:', self.DEPOSIT_RESOLUTION)
         log_info('Vis resolution:', self.VIS_RESOLUTION)
