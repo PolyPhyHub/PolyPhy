@@ -44,7 +44,7 @@ class PPConfig_3DDiscrete(PPConfig):
         if self.agent_deposit < -1.e-5:
             self.agent_deposit = self.data_deposit * self.DATA_TO_AGENTS_RATIO
         self.input_file = ppData.input_file
-        def log_info(message, *args):
+    def log_info(message, *args):
             Logger.logToStdOut('info', message, *args)
 
         log_info('Trace grid resolution:', self.TRACE_RESOLUTION)
