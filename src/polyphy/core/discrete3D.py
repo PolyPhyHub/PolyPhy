@@ -51,7 +51,6 @@ class PPConfig_3DDiscrete(PPConfig):
         log_info('Deposit grid resolution:', self.DEPOSIT_RESOLUTION)
         log_info('Vis resolution:', self.VIS_RESOLUTION)
 
-
 class PPInputData_3DDiscrete(PPInputData):
     # TODO: load datasets from specified file + type
     def __load_from_file__(self):
