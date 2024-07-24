@@ -51,7 +51,6 @@ class PPConfig_3DDiscrete(PPConfig):
 
 class PPInputData_3DDiscrete(PPInputData):
     # TODO: load datasets from specified file + type
-
     def __load_from_file__(self):
         Logger.logToStdOut("info", 'Loading input file... '
                            + self.ROOT + self.input_file, self.DOMAIN_MIN)
