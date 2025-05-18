@@ -26,7 +26,6 @@ class PPKernels_2DContinuous(PPKernels):
                 data_field: ti.template(),
                 deposit_field: ti.template()):
         for cell in ti.grouped(deposit_field):
-            pos = PPTypes.VEC2f(0.0, 0.0)
             pos = PPTypes.VEC2f(DOMAIN_SIZE) * ti.cast(cell, PPTypes.FLOAT_GPU) / PPTypes.VEC2f(DEPOSIT_RESOLUTION)
             data_val = data_field[self.world_to_grid_2D(pos, PPTypes.VEC2f(DOMAIN_MIN), PPTypes.VEC2f(DOMAIN_MAX), PPTypes.VEC2i(DATA_RESOLUTION))][0]
             deposit_field[cell][current_deposit_index] += data_deposit * data_val
