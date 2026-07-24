@@ -16,7 +16,7 @@ pytest-cov
 pytest-xdist
 pytest==7.1.2
 scipy
-setuptools==65.5.1
+setuptools==83.0.0
 setuptools_scm
 sphinx-copybutton
 sphinx>=3.2.1
